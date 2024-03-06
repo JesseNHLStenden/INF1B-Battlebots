@@ -80,7 +80,7 @@ void loop()
     {
       do
       {
-        delay(100);
+        delay(10);
       } while (getDistanceCM() > 20);
     }
 
