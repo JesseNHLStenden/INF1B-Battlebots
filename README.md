@@ -13,7 +13,7 @@ Project battlebot is a project revolves around a racetrack in which the battlebo
 ### Using the Robot
 To use the robot, place it in the parking space with the color sensor facing the large black square, and the sensor should be just within the parking space.
 
-## #Features
+## Features
 
 The robot has the following functions:
 - to be implemented
