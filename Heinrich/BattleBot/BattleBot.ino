@@ -23,16 +23,9 @@ const int MOTOR_A_1 = 3;
 const int MOTOR_A_2 = 5;
 const int MOTOR_B_1 = 6;
 const int MOTOR_B_2 = 11;
-const int MOTOR_B_Afwijking = 50;
+const int MOTOR_B_Afwijking = 40;
 
-const int LIGHT_SENSOR_1 = A5;
-const int LIGHT_SENSOR_2 = A4;
-const int LIGHT_SENSOR_3 = A6;
-const int LIGHT_SENSOR_4 = A3;
-const int LIGHT_SENSOR_5 = A2;
-const int LIGHT_SENSOR_6 = A1;
-const int LIGHT_SENSOR_7 = A0;
-const int LIGHT_SENSOR_8 = A7;
+const int LIGHT_SENSOR[8] = {A5, A4, A6, A3, A2, A1, A0, A7};
 
 const int MOTOR_SENSOR_1 = 12;
 const int MOTOR_SENSOR_2 = 10;
@@ -58,6 +51,12 @@ void setup()
   pinMode(MOTOR_B_2, OUTPUT);
   pinMode(AFSTAND_ECHO, INPUT);
   pinMode(AFSTAND_TRIGGER, OUTPUT);
+
+  for (int i = 0; i < 8; i++)
+  {
+    pinMode(LIGHT_SENSOR[i], INPUT);
+  }
+
   gripperServo.attach(MOTOR_SERVO);
   pixels.begin();
 
@@ -73,15 +72,14 @@ void loop()
   }
   else
   {
-    getDistanceCM() ;
-
+    getDistanceCM();
 
     for (int i = 0; i < 3; i++)
     {
       do
       {
         delay(100);
-      } while (getDistanceCM() > 20);
+      } while (getDistanceCM() > 24);
     }
 
     for (int i = 0; i < 4; i++)
@@ -94,26 +92,28 @@ void loop()
 
     for (int i = 0; i < 6; i += 2)
     {
-      while (analogRead(LIGHT_SENSOR_1) > COLOR_BLACK && analogRead(LIGHT_SENSOR_7) > COLOR_BLACK)
+      while (analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK)
       {
         delay(1);
       }
-      motorStop();
-      delay(500);
-      colorValues[i] = analogRead(LIGHT_SENSOR_4);
+
+      colorValues[i] = analogRead(LIGHT_SENSOR[3]);
       Serial.println(colorValues[i]);
-      motorForward(210);
-      while (analogRead(LIGHT_SENSOR_1) < COLOR_BLACK && analogRead(LIGHT_SENSOR_7) < COLOR_BLACK)
+
+      delay(100);
+
+      motorForward(190);
+      while (analogRead(LIGHT_SENSOR[0]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) < COLOR_BLACK)
       {
         delay(1);
       }
-      motorStop();
-      delay(500);
-      colorValues[i + 1] = analogRead(LIGHT_SENSOR_4);
+
+      colorValues[i + 1] = analogRead(LIGHT_SENSOR[3]);
       Serial.println(colorValues[i + 1]);
-      motorRight(200);
-      delay(25);
-      motorForward(210);
+
+      delay(100);
+
+      motorForward(190);
     }
 
     motorForward(200);
@@ -122,36 +122,84 @@ void loop()
 
     COLOR_BLACK = average(colorValues, 6) + 250;
 
-    while (analogRead(LIGHT_SENSOR_1) > COLOR_BLACK && analogRead(LIGHT_SENSOR_7) > COLOR_BLACK)
+    while (analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[5]) > COLOR_BLACK)
     {
       delay(1);
     }
-    motorForwardWithPulses(230, 16);
-    motorStop();
+    while (analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK)
+    {
+      delay(1);
+    }
     motorGripperClose();
-    motorTurnLeft(230);
-    motorForwardWithPulses(230, 15);
+    motorLeft(200);
+    delay(200);
+
+    do
+    {
+      motorLeft(200);
+      if (analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK)
+      {
+        break;
+      }
+    } while (true);
     START_READY = true;
   }
 }
 void followLine()
 {
-  if (analogRead(LIGHT_SENSOR_1) > COLOR_BLACK || analogRead(LIGHT_SENSOR_2) > COLOR_BLACK)
+  // if (analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[7]) > COLOR_BLACK)
+  // {
+  //   delay(200);
+  //   if (analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[7]) > COLOR_BLACK)
+  //   {
+  //     motorStop();
+  //     motorGripperOpen();
+  //     motorBackward(255);
+  //     delay(2000);
+  //     motorStop();
+  //     exit(0);
+  //   }
+  // }
+  // else
+  if (analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK)
   {
-    motorForwardWithPulses(200, 9);
-    motorTurnRight(200);
-    while (true)
-    {
-      motorRight(200);
-      if(analogRead(LIGHT_SENSOR_4) > COLOR_BLACK){
-        break;
+    motorForwardWithPulses(200, 3);
+    if (analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK){
+      motorStop();
+      motorGripperOpen();
+      motorBackward(255);
+      delay(2000);
+      motorStop();
+      exit(0);
+    } else {
+      motorForwardWithPulses(200, 6);
+      motorTurnRight(200);
+      while (true)
+      {
+        motorRight(200);
+        if (analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK)
+        {
+          break;
+        }
       }
-    }    
+    }
   }
-  // 
-  else if (analogRead(LIGHT_SENSOR_6) > COLOR_BLACK || analogRead(LIGHT_SENSOR_5) > COLOR_BLACK || analogRead(LIGHT_SENSOR_4) > COLOR_BLACK || analogRead(LIGHT_SENSOR_7) > COLOR_BLACK)
+  else if (analogRead(LIGHT_SENSOR[5]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK)
   {
     motorForward(220);
+  }
+  else if (analogRead(LIGHT_SENSOR[0]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[1]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[2]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[3]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[5]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[3]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[7]) < COLOR_BLACK)
+  {
+    motorForwardWithPulses(200, 9);
+    motorTurnLeft(255);
+    while (true)
+    {
+      motorLeft(255);
+      if (analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK)
+      {
+        break;
+      }
+    }
   }
   else
   {
@@ -164,72 +212,40 @@ void checkBothSides()
 
   bool colorDetected = false;
 
-  if (analogRead(LIGHT_SENSOR_8) > COLOR_BLACK){
-    do{
+  if (analogRead(LIGHT_SENSOR[7]) > COLOR_BLACK)
+  {
+    do
+    {
       motorLeft(200);
-      if(analogRead(LIGHT_SENSOR_7) > COLOR_BLACK){
+      if (analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK)
+      {
         break;
       }
     } while (true);
-  } else if (analogRead(LIGHT_SENSOR_3) > COLOR_BLACK ||  analogRead(LIGHT_SENSOR_2) > COLOR_BLACK || analogRead(LIGHT_SENSOR_1) > COLOR_BLACK) {
-    do{
+  }
+  else if (analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK)
+  {
+    do
+    {
       motorRight(200);
-      if(analogRead(LIGHT_SENSOR_4) > COLOR_BLACK){
+      if (analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK)
+      {
         break;
       }
     } while (true);
-  } else {
-    do{
+  }
+  else
+  {
+    do
+    {
       motorLeft(200);
-      if(analogRead(LIGHT_SENSOR_7) > COLOR_BLACK){
+      if (analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK)
+      {
         break;
       }
     } while (true);
   }
   motorStop();
-
-  // // check Right
-  // for (int i = 0; i < 400; i++)
-  // {
-  //   motorRight(200);
-  //   if (analogRead(LIGHT_SENSOR_5) > COLOR_BLACK)
-  //   {
-  //     colorDetected = true;
-  //     break;
-  //   }
-  //   delay(1);
-  // }
-  // motorStop();
-  // delay(200);
-
-  // // check Left
-  // if (!colorDetected)
-  // {
-  //   for (int i = 0; i < 900; i++)
-  //   {
-  //     motorLeft(200);
-  //     if (analogRead(LIGHT_SENSOR_5) > COLOR_BLACK)
-  //     {
-  //       colorDetected = true;
-  //       break;
-  //     }
-  //     delay(1);
-  //   }
-  // }
-  // if (!colorDetected)
-  // {
-  //   while (colorDetected)
-  //   {
-  //     motorLeft(200);
-  //     if (analogRead(LIGHT_SENSOR_6) > COLOR_BLACK || analogRead(LIGHT_SENSOR_5) > COLOR_BLACK)
-  //     {
-  //       colorDetected = true;
-  //       break;
-  //     }
-  //     delay(1);
-  //   }
-  // }
-  // motorStop();
 }
 
 void motorForward(int motorSpeed)
@@ -519,7 +535,8 @@ void setLightStartUpLight(int lightNR)
   pixels.setPixelColor(lightNR, pixels.Color(0, 0, 255));
   pixels.show();
 }
-void lightsOff(){
+void lightsOff()
+{
   pixels.setPixelColor(0, pixels.Color(0, 0, 0));
   pixels.setPixelColor(1, pixels.Color(0, 0, 0));
   pixels.setPixelColor(2, pixels.Color(0, 0, 0));
