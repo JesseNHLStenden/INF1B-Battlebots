@@ -23,7 +23,7 @@ const int MOTOR_A_1 = 3;
 const int MOTOR_A_2 = 5;
 const int MOTOR_B_1 = 6;
 const int MOTOR_B_2 = 11;
-const int MOTOR_B_Afwijking = 40;
+const int MOTOR_B_Afwijking = 45;
 
 const int LIGHT_SENSOR[8] = {A5, A4, A6, A3, A2, A1, A0, A7};
 
@@ -170,7 +170,43 @@ void followLine()
       motorBackward(255);
       delay(2000);
       motorStop();
-      exit(0);
+      while (true)
+      {
+        int randomColor = random(0, 255);
+        for (int i = 0; i <= 255; i++){
+          delay(10);
+          for (int j = 0; j < 4; j++)
+          {
+            pixels.setPixelColor(0, pixels.Color(i, i, randomColor));
+            pixels.setPixelColor(1, pixels.Color(i, i, randomColor));
+            pixels.setPixelColor(2, pixels.Color(i, i, randomColor));
+            pixels.setPixelColor(3, pixels.Color(i, i, randomColor));
+            pixels.show();
+          }
+        }
+        for (int i = 0; i <= 255; i++){
+          delay(10);
+          for (int j = 0; j < 4; j++)
+          {
+            pixels.setPixelColor(0, pixels.Color(randomColor, i, i));
+            pixels.setPixelColor(1, pixels.Color(randomColor, i, i));
+            pixels.setPixelColor(2, pixels.Color(randomColor, i, i));
+            pixels.setPixelColor(3, pixels.Color(randomColor, i, i));
+            pixels.show();
+          }
+        }
+        for (int i = 0; i <= 255; i++){
+          delay(10);
+          for (int j = 0; j < 4; j++)
+          {
+            pixels.setPixelColor(0, pixels.Color(i, randomColor, i));
+            pixels.setPixelColor(1, pixels.Color(i, randomColor, i));
+            pixels.setPixelColor(2, pixels.Color(i, randomColor, i));
+            pixels.setPixelColor(3, pixels.Color(i, randomColor, i));
+            pixels.show();
+          }
+        }
+      }
     } else {
       motorForwardWithPulses(200, 6);
       motorTurnRight(200);
@@ -194,7 +230,7 @@ void followLine()
     motorTurnLeft(255);
     while (true)
     {
-      motorLeft(255);
+      motorLeft(210);
       if (analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK)
       {
         break;
@@ -372,7 +408,7 @@ void motorTurnRight(int motorSpeed)
 void motorTurnLeft(int motorSpeed)
 {
   leftLights();
-  int pulsesToDo = 8 * 2;
+  int pulsesToDo = 9 * 2;
   int motor1PulsesDone = 0;
   int motor2PulsesDone = 0;
   int previous1Pulse = 2;
@@ -463,6 +499,7 @@ void motorBackward(int motorSpeed)
   analogWrite(MOTOR_A_2, motorSpeed);
   analogWrite(MOTOR_B_1, motorSpeed - MOTOR_B_Afwijking);
   analogWrite(MOTOR_B_2, 0);
+  reversingLight();
 }
 void motorStop()
 {
@@ -526,6 +563,14 @@ void standardLight()
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
   pixels.setPixelColor(1, pixels.Color(0, 50, 0));
+  pixels.setPixelColor(2, pixels.Color(50, 50, 50));
+  pixels.setPixelColor(3, pixels.Color(50, 50, 50));
+  pixels.show();
+}
+void reversingLight()
+{
+  pixels.setPixelColor(0, pixels.Color(0, 50, 0));
+  pixels.setPixelColor(1, pixels.Color(255, 255, 255));
   pixels.setPixelColor(2, pixels.Color(50, 50, 50));
   pixels.setPixelColor(3, pixels.Color(50, 50, 50));
   pixels.show();
