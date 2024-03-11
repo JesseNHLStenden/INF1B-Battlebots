@@ -1,8 +1,13 @@
 #include <Adafruit_NeoPixel.h>
-#include <Servo.h>
+// #include <Servo.h>
 
 #define NUM_PIXELS 4 // Number of NeoPixels in the strip
 #define PIXEL_PIN 7  // Pin connected to the NeoPixels
+
+#define GRIPPER_OPEN  1600 // Puls lengte Open
+#define GRIPPER_CLOSE  800  // Puls lengte Open
+#define SERVO_INTERVAL  20 //Servo millis interval
+#define GRIPPER_TOGGLE  1000 //Toggle interval
 
 // Create NeoPixel object
 Adafruit_NeoPixel pixels(NUM_PIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
@@ -15,31 +20,31 @@ Rechtsvoor: 2
 Linksvoor: 3
 */
 
-int colorValues[] = {0, 0, 0, 0, 0, 0};
+int colorValues[] = {0, 0, 0, 0, 0, 0}; // Lege array om de waardes van de waardes te lezen
 
-const int MOTOR_SERVO = 9;
+const int MOTOR_SERVO = 9; // Pin voor gripper
 
-const int MOTOR_A_1 = 3;
-const int MOTOR_A_2 = 5;
-const int MOTOR_B_1 = 6;
-const int MOTOR_B_2 = 11;
-const int MOTOR_B_Afwijking = 45;
+const int MOTOR_A_1 = 3; // Motor A1
+const int MOTOR_A_2 = 5; // Motor A2
+const int MOTOR_B_1 = 6; // Motor B1
+const int MOTOR_B_2 = 11; // Motor B2
+const int MOTOR_B_Afwijking = 50; // Motor b afwijking
 
-const int LIGHT_SENSOR[8] = {A5, A4, A6, A3, A2, A1, A0, A7};
+const int LIGHT_SENSOR[8] = {A5, A4, A6, A3, A2, A1, A0, A7}; // Array voor de pins van de lichtsensoren
 
-const int MOTOR_SENSOR_1 = 12;
-const int MOTOR_SENSOR_2 = 10;
+const int MOTOR_SENSOR_1 = 12; // Pin voor R1
+const int MOTOR_SENSOR_2 = 10; // Pin voor R2
 
-const int AFSTAND_ECHO = 4;
-const int AFSTAND_TRIGGER = 2;
+const int AFSTAND_ECHO = 4; // Pin voor echo's versturen
+const int AFSTAND_TRIGGER = 2; // Pin voor echo's ontvangen (trigger)
 
-int COLOR_BLACK = 900;
+int COLOR_BLACK = 900; // De lichtwaarde van zwart voor de calibratie om zwart te onderscheiden wit
 
 float duration_us;
 
-bool START_READY = false;
+bool START_READY = false; // Zorgt ervoor dat de startsetup en calibratie eenmalig gebeurd
 
-Servo gripperServo;
+// Servo gripperServo;
 
 void setup()
 {
@@ -54,10 +59,14 @@ void setup()
 
   for (int i = 0; i < 8; i++)
   {
-    pinMode(LIGHT_SENSOR[i], INPUT);
+    pinMode(LIGHT_SENSOR[i], INPUT); // Deze functie zorgt ervoor dat elke lichtsensor bij de juiste pinMode wordt gezet
   }
 
-  gripperServo.attach(MOTOR_SERVO);
+  // gripperServo.attach(MOTOR_SERVO);
+
+  pinMode(MOTOR_SERVO, OUTPUT);
+  digitalWrite(MOTOR_SERVO, LOW);
+
   pixels.begin();
 
   lightsOff();
@@ -65,7 +74,8 @@ void setup()
 
 void loop()
 {
-  if (START_READY)
+
+  if (START_READY) // Dit gebeurt er na de calibratie en de startsetup
   {
     standardLight();
     followLine();
@@ -79,10 +89,11 @@ void loop()
       do
       {
         delay(100);
-      } while (getDistanceCM() > 24);
+        servoState(GRIPPER_OPEN);
+      } while (getDistanceCM() > 24); // Als er een object binnen 24 cm bereik staat dan begint de code
     }
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 4; i++) // Deze functie telt af voordat de robot begint
     {
       setLightStartUpLight(i);
       delay(1250);
@@ -97,7 +108,7 @@ void loop()
         delay(1);
       }
 
-      colorValues[i] = analogRead(LIGHT_SENSOR[3]);
+      colorValues[i] = analogRead(LIGHT_SENSOR[3]); // Hier worden de gemeten waardes van zwart op de juiste variabele gezet
       Serial.println(colorValues[i]);
 
       delay(100);
@@ -122,15 +133,23 @@ void loop()
 
     COLOR_BLACK = average(colorValues, 6) + 250;
 
+    servoState(GRIPPER_CLOSE);
+
     while (analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[5]) > COLOR_BLACK)
     {
       delay(1);
     }
-    while (analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK)
+    while (analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK) // Deze functie zorgt ervoor dat na de calibratie, zodra er wit wordt gezien, draait Heinrich 90 graden naar links
     {
       delay(1);
     }
-    motorGripperClose();
+    motorStop();
+    for (int i = 0; i < 100; i++)
+    {
+      delay(1);
+      servoState(GRIPPER_CLOSE);
+    }
+    
     motorLeft(200);
     delay(200);
 
@@ -147,33 +166,23 @@ void loop()
 }
 void followLine()
 {
-  // if (analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[7]) > COLOR_BLACK)
-  // {
-  //   delay(200);
-  //   if (analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[7]) > COLOR_BLACK)
-  //   {
-  //     motorStop();
-  //     motorGripperOpen();
-  //     motorBackward(255);
-  //     delay(2000);
-  //     motorStop();
-  //     exit(0);
-  //   }
-  // }
-  // else
+  servoState(GRIPPER_CLOSE);
+
   if (analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK)
   {
     motorForwardWithPulses(200, 3);
-    if (analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK){
+    if (analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK)
+    {
       motorStop();
-      motorGripperOpen();
+      servoState(GRIPPER_OPEN);
       motorBackward(255);
       delay(2000);
       motorStop();
       while (true)
       {
         int randomColor = random(0, 255);
-        for (int i = 0; i <= 255; i++){
+        for (int i = 0; i <= 255; i++)
+        {
           delay(10);
           for (int j = 0; j < 4; j++)
           {
@@ -184,7 +193,8 @@ void followLine()
             pixels.show();
           }
         }
-        for (int i = 0; i <= 255; i++){
+        for (int i = 0; i <= 255; i++)
+        {
           delay(10);
           for (int j = 0; j < 4; j++)
           {
@@ -195,7 +205,8 @@ void followLine()
             pixels.show();
           }
         }
-        for (int i = 0; i <= 255; i++){
+        for (int i = 0; i <= 255; i++)
+        {
           delay(10);
           for (int j = 0; j < 4; j++)
           {
@@ -207,13 +218,15 @@ void followLine()
           }
         }
       }
-    } else {
+    }
+    else
+    {
       motorForwardWithPulses(200, 6);
       motorTurnRight(200);
       while (true)
       {
-        motorRight(200);
-        if (analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK)
+        motorRight(180);
+        if (analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK)
         {
           break;
         }
@@ -227,7 +240,7 @@ void followLine()
   else if (analogRead(LIGHT_SENSOR[0]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[1]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[2]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[3]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[5]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[3]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[7]) < COLOR_BLACK)
   {
     motorForwardWithPulses(200, 9);
-    motorTurnLeft(255);
+    motorTurnLeft(230);
     while (true)
     {
       motorLeft(210);
@@ -292,7 +305,6 @@ void motorForward(int motorSpeed)
   analogWrite(MOTOR_B_1, 0);
   analogWrite(MOTOR_B_2, motorSpeed - MOTOR_B_Afwijking);
 }
-
 void motorForwardWithPulses(int motorSpeed, double pulses)
 {
   standardLight();
@@ -352,7 +364,7 @@ void motorForwardWithPulses(int motorSpeed, double pulses)
 void motorTurnRight(int motorSpeed)
 {
   rightLights();
-  int pulsesToDo = 9 * 2;
+  int pulsesToDo = 8 * 2;
   int motor1PulsesDone = 0;
   int motor2PulsesDone = 0;
   int previous1Pulse = 2;
@@ -510,14 +522,7 @@ void motorStop()
   analogWrite(MOTOR_B_2, 0);
 }
 
-void motorGripperClose()
-{
-  gripperServo.write(30);
-}
-void motorGripperOpen()
-{
-  gripperServo.write(90);
-}
+
 float getDistanceCM()
 {
   digitalWrite(AFSTAND_TRIGGER, HIGH);
@@ -575,11 +580,13 @@ void reversingLight()
   pixels.setPixelColor(3, pixels.Color(50, 50, 50));
   pixels.show();
 }
+
 void setLightStartUpLight(int lightNR)
 {
   pixels.setPixelColor(lightNR, pixels.Color(0, 0, 255));
   pixels.show();
 }
+
 void lightsOff()
 {
   pixels.setPixelColor(0, pixels.Color(0, 0, 0));
@@ -588,6 +595,7 @@ void lightsOff()
   pixels.setPixelColor(3, pixels.Color(0, 0, 0));
   pixels.show();
 }
+
 int average(int numbers[], int size)
 {
   double sum = 0;
@@ -596,4 +604,36 @@ int average(int numbers[], int size)
     sum += numbers[x];
   }
   return (int)sum / (double)size;
+}
+
+void gripperToggle() {
+  static unsigned long timer;
+  static bool state;
+  if (millis() > timer) {
+    if (state) {
+      servoState(GRIPPER_OPEN);
+    } else {
+      servoState(GRIPPER_CLOSE);
+    }
+
+    state = !state;
+
+    timer = millis() + GRIPPER_TOGGLE;
+  }
+}
+
+void servoState(int pulse) {
+  static unsigned long timer;
+  static int pulseUsed;
+  if (pulse > 0)
+  {
+    pulseUsed = pulse;
+  }
+  if (millis() > timer)
+  {
+    digitalWrite(MOTOR_SERVO, HIGH);
+    delayMicroseconds(pulseUsed);
+    digitalWrite(MOTOR_SERVO, LOW);
+    timer = millis() + SERVO_INTERVAL;
+  }
 }
