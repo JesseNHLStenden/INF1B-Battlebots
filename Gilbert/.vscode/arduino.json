@@ -1,0 +1,7 @@
+{
+    "sketch": "Gilbert.ino",
+    "configuration": "cpu=atmega328old",
+    "board": "arduino:avr:nano",
+    "programmer": "avrisp",
+    "port": "/dev/ttyUSB0"
+}
