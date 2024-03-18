@@ -67,10 +67,25 @@ void loop()
     moveServo(96);
     delay(250);
     // scan for distance
-    getDistanceFromPulse();
+    int cmToMove = getDistanceFromPulse();
     // Calculate distance if pulses
-    pulsesToMove = distance * ONE_CM_IN_ROTATIONS;
-    // Drive forward based on pulses
+    
+    if(cmToMove < 12)
+    {
+      moveServo(180);
+
+      sendPulse();
+
+      if (distance >= 30)
+        stopMoving();
+        turnLeft();
+
+      delay(2000);
+    }
+
+
+    pulsesToMove = cmToMove * ONE_CM_IN_ROTATIONS;
+    
     moveForward(255,255);
 
     moveServo(0);   // Servo naar rechts draaien
@@ -82,17 +97,28 @@ void loop()
     Serial.print(r1Rotations / ONE_CM_IN_ROTATIONS);
     pulsesToMove = 0;
     r1Rotations = 0;
+  }  
+  else
+  {
+    sendPulse(); // Puls versturen
+    adjustDirection();
   }
 
-  sendPulse(); // Puls versturen
-  adjustDirection(); // Functie om de richting aan te passen op basis van de afstand
-  // Check if pulses are over their limit.
+}
 
-  // If not continue moving forward
+void turnLeft()
+{
+  moveBackward(255, 255);
+  delay(250);
+  moveLeft(255, 255);
+}
 
-  // If so stop moving and pulse forward/left
-
-  // Based on feedback do whatever actions need to be done
+void moveLeft(int leftSpeed, int rightSpeed)
+{
+  analogWrite(A1_MOTOR_PIN, leftSpeed);
+  analogWrite(A2_MOTOR_PIN, 0);
+  analogWrite(B1_MOTOR_PIN, 0);
+  analogWrite(B2_MOTOR_PIN, rightSpeed);
 }
 
 void moveServo(int angle)
@@ -128,20 +154,8 @@ int getDistanceFromPulse()
 
   for (int i = 0; i < 5; i++)
   {
-    digitalWrite(TRIGGER_PIN, LOW);
-    delayMicroseconds(2);
-    digitalWrite(TRIGGER_PIN, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(TRIGGER_PIN, LOW);
+    sendPulse();
 
-    duration = pulseIn(ECHO_PIN, HIGH);
-    distance = duration * 0.034 / 2;
-
-    Serial.print("Distance ping ");
-    Serial.print(i);
-    Serial.print(" Approx ");
-    Serial.print(distance);
-    Serial.println("CM");
     avaragePulse += distance;
     delay(10);
   }
@@ -161,6 +175,14 @@ void moveForward(int leftSpeed, int rightSpeed)
   analogWrite(A2_MOTOR_PIN, leftSpeed);
   analogWrite(B1_MOTOR_PIN, 0);
   analogWrite(B2_MOTOR_PIN, rightSpeed);
+}
+
+void moveBackward(int leftSpeed, int rightSpeed)
+{
+  analogWrite(A1_MOTOR_PIN, leftSpeed);
+  analogWrite(A2_MOTOR_PIN, 0);
+  analogWrite(B1_MOTOR_PIN, rightSpeed);
+  analogWrite(B2_MOTOR_PIN, 0);
 }
 
 void stopMoving()

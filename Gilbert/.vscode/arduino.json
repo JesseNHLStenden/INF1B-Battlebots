@@ -3,5 +3,5 @@
     "configuration": "cpu=atmega328old",
     "board": "arduino:avr:nano",
     "programmer": "avrisp",
-    "port": "/dev/ttyUSB0"
+    "port": "/dev/ttyUSB1"
 }
