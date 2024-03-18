@@ -177,4 +177,9 @@ void adjustDirection() {
   } else if (distance < 13) {
     moveForward(200,255); // Turn slightly left
   }
+
+  if (distance > 25)
+    {
+      stopMoving();
+    }
 }
