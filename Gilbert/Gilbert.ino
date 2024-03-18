@@ -26,7 +26,8 @@ int distance;
 // Variables for determining pulse movement
 int pulsesToMove;
 
-void setup() {
+void setup()
+{
   // Serial
   Serial.begin(9600);
 
@@ -50,21 +51,24 @@ void setup() {
   moveServo(90);
 }
 
-void rotateR1() {
+void rotateR1()
+{
   r1Rotations++;
 }
 
-void rotateR2() {
+void rotateR2()
+{
   r2Rotations++;
 }
 
-void loop() {
+void loop()
+{
   if (pulsesToMove == 0)
   {
     // Move the servo forward
-    moveServo(90);
+    moveServo(96);
     // scan for distance
-    sendPulse();
+    getDistanceFromPulse();
     // Calculate distance if pulses
     pulsesToMove = distance * ONE_CM_IN_ROTATIONS;
     // Drive forward based on pulses
@@ -74,17 +78,10 @@ void loop() {
   {
     stopMoving();
     Serial.println("Approx CM moved:");
-    Serial.print(r1Rotations/ONE_CM_IN_ROTATIONS);
+    Serial.print(r1Rotations / ONE_CM_IN_ROTATIONS);
     pulsesToMove = 0;
     r1Rotations = 0;
     delay(5000);
-  }
-
-  if(r1Rotations < pulsesToMove){
-    // delay(250);
-    // moveServo(0);
-    // sendPulse();
-
   }
 
   // Check if pulses are over their limit.
@@ -94,11 +91,12 @@ void loop() {
   // If so stop moving and pulse forward/left
 
   // Based on feedback do whatever actions need to be done
-
 }
 
-void moveServo(int angle) {
-  for (int i = 0; i < 10; i++){
+void moveServo(int angle)
+{
+  for (int i = 0; i < 10; i++)
+  {
     int pulseWidth = map(angle, 0, 180, 544, 2400);
 
     digitalWrite(SERVO_PIN, HIGH);
@@ -107,31 +105,51 @@ void moveServo(int angle) {
   }
 }
 
-void sendPulse() {
-  digitalWrite(TRIGGER_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIGGER_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIGGER_PIN, LOW);
+int getDistanceFromPulse()
+{
+  int avaragePulse = 0;
 
-  duration = pulseIn(ECHO_PIN, HIGH);
-  distance = duration * 0.034 / 2;
+  for (int i = 0; i < 5; i++)
+  {
+    digitalWrite(TRIGGER_PIN, LOW);
+    delayMicroseconds(2);
+    digitalWrite(TRIGGER_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIGGER_PIN, LOW);
 
-  Serial.print("Distance: ");
-  Serial.print(distance);
+    duration = pulseIn(ECHO_PIN, HIGH);
+    distance = duration * 0.034 / 2;
+
+    Serial.print("Distance ping ");
+    Serial.print(i);
+    Serial.print(" Approx ");
+    Serial.print(distance);
+    Serial.println("CM");
+    avaragePulse += distance;
+    delay(1000);
+  }
+
+  avaragePulse /= 5;
+
+  Serial.print("Approx distance able to travel: ");
+  Serial.print(avaragePulse);
   Serial.println(" cm");
+
+  return avaragePulse;
 }
 
-void moveForward() {
+void moveForward()
+{
   analogWrite(A1_MOTOR_PIN, 0);
   analogWrite(A2_MOTOR_PIN, 220);
   analogWrite(B1_MOTOR_PIN, 0);
   analogWrite(B2_MOTOR_PIN, 220);
 }
 
-void stopMoving() {
-    analogWrite(A1_MOTOR_PIN, 0);
-    analogWrite(A2_MOTOR_PIN, 0);
-    analogWrite(B1_MOTOR_PIN, 0);
-    analogWrite(B2_MOTOR_PIN, 0);
+void stopMoving()
+{
+  analogWrite(A1_MOTOR_PIN, 0);
+  analogWrite(A2_MOTOR_PIN, 0);
+  analogWrite(B1_MOTOR_PIN, 0);
+  analogWrite(B2_MOTOR_PIN, 0);
 }
