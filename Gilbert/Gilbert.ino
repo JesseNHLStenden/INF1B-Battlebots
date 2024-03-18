@@ -47,8 +47,6 @@ void setup()
   pinMode(A2_MOTOR_PIN, OUTPUT);
   pinMode(B1_MOTOR_PIN, OUTPUT);
   pinMode(B2_MOTOR_PIN, OUTPUT);
-
-  moveServo(90);
 }
 
 void rotateR1()
@@ -67,6 +65,7 @@ void loop()
   {
     // Move the servo forward
     moveServo(96);
+    delay(250);
     // scan for distance
     getDistanceFromPulse();
     // Calculate distance if pulses
@@ -74,9 +73,7 @@ void loop()
     // Drive forward based on pulses
     moveForward(255,255);
 
-      moveServo(0); // Servo naar rechts draaien
-      sendPulse(); // Puls versturen
-      adjustDirection(); // Functie om de richting aan te passen op basis van de afstand
+    moveServo(0);   // Servo naar rechts draaien
   }
   else if (r1Rotations >= pulsesToMove)
   {
@@ -85,9 +82,10 @@ void loop()
     Serial.print(r1Rotations / ONE_CM_IN_ROTATIONS);
     pulsesToMove = 0;
     r1Rotations = 0;
-    delay(5000);
   }
 
+  sendPulse(); // Puls versturen
+  adjustDirection(); // Functie om de richting aan te passen op basis van de afstand
   // Check if pulses are over their limit.
 
   // If not continue moving forward
@@ -145,7 +143,7 @@ int getDistanceFromPulse()
     Serial.print(distance);
     Serial.println("CM");
     avaragePulse += distance;
-    delay(1000);
+    delay(10);
   }
 
   avaragePulse /= 5;
