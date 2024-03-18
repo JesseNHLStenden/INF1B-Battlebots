@@ -72,7 +72,11 @@ void loop()
     // Calculate distance if pulses
     pulsesToMove = distance * ONE_CM_IN_ROTATIONS;
     // Drive forward based on pulses
-    moveForward();
+    moveForward(255,255);
+
+      moveServo(0); // Servo naar rechts draaien
+      sendPulse(); // Puls versturen
+      adjustDirection(); // Functie om de richting aan te passen op basis van de afstand
   }
   else if (r1Rotations >= pulsesToMove)
   {
@@ -103,6 +107,21 @@ void moveServo(int angle)
     delayMicroseconds(pulseWidth);
     digitalWrite(SERVO_PIN, LOW);
   }
+}
+
+void sendPulse() {
+  digitalWrite(TRIGGER_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIGGER_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIGGER_PIN, LOW);
+
+  duration = pulseIn(ECHO_PIN, HIGH);
+  distance = duration * 0.034 / 2;
+
+  Serial.print("Distance: ");
+  Serial.print(distance);
+  Serial.println(" cm");
 }
 
 int getDistanceFromPulse()
@@ -138,12 +157,12 @@ int getDistanceFromPulse()
   return avaragePulse;
 }
 
-void moveForward()
+void moveForward(int leftSpeed, int rightSpeed)
 {
   analogWrite(A1_MOTOR_PIN, 0);
-  analogWrite(A2_MOTOR_PIN, 220);
+  analogWrite(A2_MOTOR_PIN, leftSpeed);
   analogWrite(B1_MOTOR_PIN, 0);
-  analogWrite(B2_MOTOR_PIN, 220);
+  analogWrite(B2_MOTOR_PIN, rightSpeed);
 }
 
 void stopMoving()
@@ -152,4 +171,12 @@ void stopMoving()
   analogWrite(A2_MOTOR_PIN, 0);
   analogWrite(B1_MOTOR_PIN, 0);
   analogWrite(B2_MOTOR_PIN, 0);
+}
+
+void adjustDirection() {
+  if (distance > 13) {
+    moveForward(255,255); // Go straight
+  } else if (distance < 13) {
+    moveForward(200,255); // Turn slightly left
+  }
 }
