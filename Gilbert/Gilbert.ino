@@ -69,26 +69,34 @@ void loop()
     // scan for distance
     int cmToMove = getDistanceFromPulse();
     // Calculate distance if pulses
-    
-    if(cmToMove < 12)
+
+    if (cmToMove < 12)
     {
       moveServo(180);
-
+      delay(250);
       sendPulse();
 
       if (distance >= 30)
+      {
         stopMoving();
+        delay(150);
         turnLeft();
-
-      delay(2000);
+      }
+      else if (distance < 25) 
+      {
+        stopMoving();
+        delay(150);
+        turnLeft();
+        delay(500);
+      }
     }
 
-
     pulsesToMove = cmToMove * ONE_CM_IN_ROTATIONS;
-    
-    moveForward(255,255);
 
-    moveServo(0);   // Servo naar rechts draaien
+    moveForward(255, 255);
+
+    moveServo(0); // Servo naar rechts draaien
+    delay(250);
   }
   else if (r1Rotations >= pulsesToMove)
   {
@@ -97,20 +105,82 @@ void loop()
     Serial.print(r1Rotations / ONE_CM_IN_ROTATIONS);
     pulsesToMove = 0;
     r1Rotations = 0;
-  }  
+  }
   else
   {
     sendPulse(); // Puls versturen
     adjustDirection();
   }
-
 }
 
 void turnLeft()
 {
-  moveBackward(255, 255);
+  moveBackward(200,200);
   delay(250);
-  moveLeft(255, 255);
+  stopMoving();
+  delay(100);
+
+  r2Rotations = 0;
+
+  while(r2Rotations < 30)
+  { 
+    moveLeft(0,255);
+    Serial.println(r2Rotations);
+  }
+  stopMoving();
+
+  r2Rotations = 0;
+
+  delay(250);
+
+  while (r2Rotations < 30)
+  {
+    moveBackward(200, 200);
+    Serial.println(r2Rotations);
+  }
+
+  stopMoving();
+  
+  pulsesToMove = 0;
+  r1Rotations = 0;
+  r2Rotations = 0;
+}
+
+void turnRight()
+{
+  r1Rotations = 0;
+
+  while(r1Rotations < 35)
+  { 
+    moveRight(255,0);
+    Serial.println(r1Rotations);
+  }
+
+  stopMoving();
+
+  r1Rotations = 0;
+
+  delay(250);
+
+  while (r1Rotations < 30)
+  {
+    Serial.println(r1Rotations);
+    moveBackward(200, 200);
+  }
+
+  stopMoving();
+
+  pulsesToMove = 0;
+  r1Rotations = 0;
+  r2Rotations = 0;
+}
+
+void moveRight(int leftSpeed, int rightSpeed)
+{
+  analogWrite(A1_MOTOR_PIN, 0);
+  analogWrite(A2_MOTOR_PIN, leftSpeed);
+  analogWrite(B1_MOTOR_PIN, rightSpeed);
+  analogWrite(B2_MOTOR_PIN, 0);
 }
 
 void moveLeft(int leftSpeed, int rightSpeed)
@@ -133,7 +203,8 @@ void moveServo(int angle)
   }
 }
 
-void sendPulse() {
+void sendPulse()
+{
   digitalWrite(TRIGGER_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIGGER_PIN, HIGH);
@@ -193,15 +264,30 @@ void stopMoving()
   analogWrite(B2_MOTOR_PIN, 0);
 }
 
-void adjustDirection() {
-  if (distance > 13) {
-    moveForward(255,255); // Go straight
-  } else if (distance < 13) {
-    moveForward(200,255); // Turn slightly left
+void adjustDirection()
+{
+  int forwardCreepRotations = r1Rotations + 20;
+
+  if (distance > 13 && distance <= 25)  
+  {
+    moveForward(255, 255); // Go straight
+  }
+  else if (distance < 13)
+  {
+    moveForward(200, 255); // Turn slightly left
   }
 
   if (distance > 25)
+  { 
+    int creepForwardRotations = r1Rotations + 36;
+
+    while (r1Rotations < creepForwardRotations)
     {
-      stopMoving();
+      moveForward(200,200);
+      Serial.println(r1Rotations);
     }
+
+    stopMoving();
+    turnRight();    
+  }
 }
