@@ -3,5 +3,5 @@
     "configuration": "cpu=atmega328",
     "board": "arduino:avr:nano",
     "programmer": "avrisp",
-    "port": "COM4"
+    "port": "COM6"
 }
