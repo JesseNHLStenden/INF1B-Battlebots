@@ -1,22 +1,23 @@
-#include <Servo.h>
-
-Servo myservo;
-
+const int SERVO_PIN = 9;
 const int trigPin = A4;
-const int echoPin = A5;
-#define MOTOR_LEFT_PIN1 11
-#define MOTOR_LEFT_PIN2 6
-#define MOTOR_RIGHT_PIN1 5
-#define MOTOR_RIGHT_PIN2 10
-#define MOTOR_ROTATION_PIN_R1 12
-#define MOTOR_ROTATION_PIN_R2 13
+const int echoPin = A3;
+const int MOTOR_LEFT_PIN1 = 11;
+const int MOTOR_LEFT_PIN2 = 6;
+const int MOTOR_RIGHT_PIN1 = 5;
+const int MOTOR_RIGHT_PIN2 = 10;
+const int MOTOR_ROTATION_PIN_R1 = 12;
+const int MOTOR_ROTATION_PIN_R2 = 13;
+
+const float WIEL_RADIUS_CM = 20.0; // Radius van het wiel in cm
+const int PULSEN_PER_VOLLEDIGE_DRAAI = 44; // Aantal pulsen per volledige draai
 
 long duration;
 int distance;
+int pulsesToMove; // Variabele om het aantal pulsen voor beweging op te slaan
 
 void setup() {
   Serial.begin(9600);
-  myservo.attach(9); // Servo op pin 9
+  pinMode(SERVO_PIN, OUTPUT);
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
   pinMode(MOTOR_LEFT_PIN1, OUTPUT);
@@ -27,61 +28,49 @@ void setup() {
   pinMode(MOTOR_ROTATION_PIN_R2, INPUT);
 }
 
+void moveServo(int angle) {
+  int pulseWidth = map(angle, 0, 180, 544, 2400);
+  
+  digitalWrite(SERVO_PIN, HIGH);
+  delayMicroseconds(pulseWidth);
+  digitalWrite(SERVO_PIN, LOW);
+  delay(20);
+}
+
 void moveForward(int leftSpeed, int rightSpeed) {
-  digitalWrite(MOTOR_LEFT_PIN1, LOW);
-  analogWrite(MOTOR_LEFT_PIN2, leftSpeed);
-  digitalWrite(MOTOR_RIGHT_PIN1, LOW);
-  analogWrite(MOTOR_RIGHT_PIN2, rightSpeed);
-}
-
-void moveBackward(int leftSpeed, int rightSpeed) {
-   analogWrite(MOTOR_LEFT_PIN1, leftSpeed);
-  digitalWrite(MOTOR_LEFT_PIN2, LOW);
-  analogWrite(MOTOR_RIGHT_PIN1, rightSpeed);
-  digitalWrite(MOTOR_RIGHT_PIN2, LOW);
-}
-
-void moveLeft(int leftSpeed, int rightSpeed) {
   analogWrite(MOTOR_LEFT_PIN1, leftSpeed);
-  digitalWrite(MOTOR_LEFT_PIN2, LOW);
-  digitalWrite(MOTOR_RIGHT_PIN1, LOW);
+  analogWrite(MOTOR_LEFT_PIN2, 0);
+  analogWrite(MOTOR_RIGHT_PIN1, 0);
   analogWrite(MOTOR_RIGHT_PIN2, rightSpeed);
 }
-
-void moveRight(int leftSpeed, int rightSpeed) {
-  digitalWrite(MOTOR_LEFT_PIN1, LOW);
+void moveBackward(int leftSpeed, int rightSpeed) {
+  analogWrite(MOTOR_LEFT_PIN1, 0);
   analogWrite(MOTOR_LEFT_PIN2, leftSpeed);
   analogWrite(MOTOR_RIGHT_PIN1, rightSpeed);
-  digitalWrite(MOTOR_RIGHT_PIN2, LOW);
+  analogWrite(MOTOR_RIGHT_PIN2, 0);
 }
 
 void stopMoving() {
-  digitalWrite(MOTOR_LEFT_PIN1, LOW);
-  digitalWrite(MOTOR_LEFT_PIN2, LOW);
-  digitalWrite(MOTOR_RIGHT_PIN1, LOW);
-  digitalWrite(MOTOR_RIGHT_PIN2, LOW);
+  analogWrite(MOTOR_LEFT_PIN1, 0);
+  analogWrite(MOTOR_LEFT_PIN2, 0);
+  analogWrite(MOTOR_RIGHT_PIN1, 0);
+  analogWrite(MOTOR_RIGHT_PIN2, 0);
 }
 
-void scanArea() {
-    motorForward(); 
-    delay(350);
-    sendPulse();
-    motorRight(); 
-    delay(350);
-    sendPulse();
+void moveRight(int leftSpeed, int rightSpeed) {
+  analogWrite(MOTOR_LEFT_PIN1, leftSpeed);
+  analogWrite(MOTOR_LEFT_PIN2, 0);
+  analogWrite(MOTOR_RIGHT_PIN1, rightSpeed);
+  analogWrite(MOTOR_RIGHT_PIN2, 0);
 }
 
-void motorLeft(){
-  myservo.write(180);
+void moveLeft(int leftSpeed, int rightSpeed) {
+  analogWrite(MOTOR_LEFT_PIN1, 0);
+  analogWrite(MOTOR_LEFT_PIN2, leftSpeed);
+  analogWrite(MOTOR_RIGHT_PIN1, 0);
+  analogWrite(MOTOR_RIGHT_PIN2, rightSpeed);
 }
 
-void motorRight(){
-  myservo.write(0);
-}
-
-void motorForward(){
-  myservo.write(90);
-}
 void sendPulse() {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -91,63 +80,52 @@ void sendPulse() {
 
   duration = pulseIn(echoPin, HIGH);
   distance = duration * 0.034 / 2;
-
-  Serial.print("Angle: ");
-  Serial.print(myservo.read());
-  Serial.print(" - Distance: ");
+  
+  Serial.print("Distance: ");
   Serial.print(distance);
   Serial.println(" cm");
 }
 
+
 void loop() {
-  motorForward(); 
+  moveServo(90); 
   sendPulse();
+  
   if (distance < 10) {
     stopMoving();
-    motorRight(); 
+    moveServo(0); 
     delay(500);
     sendPulse();
     delay(200);
-     if (distance < 25) {
-        motorLeft(); 
-        delay(500);
-        sendPulse();
-        delay(200);
-        if (distance < 25) 
-        {
-          while (distance < 25) {
-          moveBackward(255, 255);
-          delay(1000);
-          motorRight();
+    
+    if (distance < 25) {
+      moveServo(180); 
+      delay(500);
+      sendPulse();
+      delay(200);
+
+      if (distance < 25) {
+          moveServo(180); 
           delay(500);
+          while (distance < 25) {
+          moveServo(180);
+          moveBackward(255, 255); // Deze functie moet gedefinieerd zijn en correct werken
           sendPulse();
-        if (distance > 25) {
-          moveRight(255, 255);
-          delay(445);
+        
+          if (distance > 25) {
+            moveServo(90);
+            moveLeft(255, 255); // Deze functie moet gedefinieerd zijn en correct werken
+            delay(400);
         }
-        moveBackward(255, 255);
-        delay(1000);
-        motorLeft();
-        delay(500);
-        sendPulse();
-        if (distance > 25) {
-          moveLeft(255, 255);
-          delay(445);
         }
       }
-        } else 
-        {
-          moveLeft(255,255);
-          delay(445);
-        }
-        
     } else if (distance > 25) {
-        // Draai naar rechts
-        moveRight(255, 255);
-        delay(445);
+      moveServo(90);
+      moveRight(255, 255); // Deze functie moet gedefinieerd zijn en correct werken
+      delay(450);
     }
   } else {
     // Ga naar voren
-    moveForward(243.5, 255);
+    moveForward(245, 255); // Deze functie moet gedefinieerd zijn en correct werken
   }
 }
