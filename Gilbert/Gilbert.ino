@@ -26,6 +26,10 @@ int distance;
 // Variables for determining pulse movement
 int pulsesToMove;
 
+// Keep track of whether robot moves or not
+int currentAmountOfPulses;
+int noMoveCounter;
+
 void setup()
 {
   // Serial
@@ -69,6 +73,7 @@ void loop()
     // scan for distance
     int cmToMove = getDistanceFromPulse();
     // Calculate distance if pulses
+    pulsesToMove = cmToMove * ONE_CM_IN_ROTATIONS;
 
     if (cmToMove < 12)
     {
@@ -82,24 +87,22 @@ void loop()
         delay(150);
         turnLeft();
       }
-      else if (distance < 25) 
+      else if (distance < 25)
       {
         stopMoving();
         delay(150);
         turnLeft();
-        delay(500);
       }
     }
 
-    pulsesToMove = cmToMove * ONE_CM_IN_ROTATIONS;
-
-    moveForward(255, 255);
+    // moveForward(240, 255);
 
     moveServo(0); // Servo naar rechts draaien
     delay(250);
   }
-  else if (r1Rotations >= pulsesToMove)
+  else if (r1Rotations >= (pulsesToMove - 5))
   {
+    // This stops the robot from moving
     stopMoving();
     Serial.println("Approx CM moved:");
     Serial.print(r1Rotations / ONE_CM_IN_ROTATIONS);
@@ -109,23 +112,48 @@ void loop()
   else
   {
     sendPulse(); // Puls versturen
+    if (distance > 35)
+    {
+      int creepForwardRotations = r1Rotations + 36;
+
+      while (r1Rotations < creepForwardRotations)
+      {
+        moveForward(200, 200);
+        Serial.println(r1Rotations);
+      }
+
+      stopMoving();
+      turnRight();
+    }
+
     adjustDirection();
   }
 }
 
 void turnLeft()
 {
-  moveBackward(200,200);
-  delay(250);
+  delay(200);
+  r2Rotations = 0;
+
+  while (r2Rotations < 15)
+  {
+    moveBackward(255, 255);
+    Serial.println(r2Rotations);
+  }
+  
   stopMoving();
   delay(100);
 
   r2Rotations = 0;
 
-  while(r2Rotations < 30)
-  { 
-    moveLeft(0,255);
+  while (r2Rotations < 34)
+  {
+    moveLeft(0, 200);
     Serial.println(r2Rotations);
+
+    sendPulse();
+      if(distance < 13)
+       break;
   }
   stopMoving();
 
@@ -135,12 +163,12 @@ void turnLeft()
 
   while (r2Rotations < 30)
   {
-    moveBackward(200, 200);
+    moveBackward(255, 255);
     Serial.println(r2Rotations);
   }
 
   stopMoving();
-  
+
   pulsesToMove = 0;
   r1Rotations = 0;
   r2Rotations = 0;
@@ -148,12 +176,18 @@ void turnLeft()
 
 void turnRight()
 {
+  delay(200);
   r1Rotations = 0;
 
-  while(r1Rotations < 35)
-  { 
-    moveRight(255,0);
+  while (r1Rotations < 30)
+  {
+    moveRight(220, 0);
     Serial.println(r1Rotations);
+
+    sendPulse();
+    if(distance < 13)
+       break;
+
   }
 
   stopMoving();
@@ -165,7 +199,7 @@ void turnRight()
   while (r1Rotations < 30)
   {
     Serial.println(r1Rotations);
-    moveBackward(200, 200);
+    moveBackward(255, 255);
   }
 
   stopMoving();
@@ -266,28 +300,14 @@ void stopMoving()
 
 void adjustDirection()
 {
-  int forwardCreepRotations = r1Rotations + 20;
+  //int correctionAmount = distance * 2;
 
-  if (distance > 13 && distance <= 25)  
+  if (distance >= 13 && distance <= 25)
   {
-    moveForward(255, 255); // Go straight
+    moveForward(250, 255); // Go straight
   }
   else if (distance < 13)
   {
-    moveForward(200, 255); // Turn slightly left
-  }
-
-  if (distance > 25)
-  { 
-    int creepForwardRotations = r1Rotations + 36;
-
-    while (r1Rotations < creepForwardRotations)
-    {
-      moveForward(200,200);
-      Serial.println(r1Rotations);
-    }
-
-    stopMoving();
-    turnRight();    
+    moveForward(170, 255); // Turn slightly left
   }
 }
