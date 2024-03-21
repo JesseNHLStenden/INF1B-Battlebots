@@ -30,6 +30,8 @@ int pulsesToMove;
 int currentAmountOfPulses;
 int noMoveCounter;
 
+boolean isPreviousVoid = false;
+
 void setup()
 {
   // Serial
@@ -112,13 +114,19 @@ void loop()
   else
   {
     sendPulse(); // Puls versturen
-    if (distance > 35)
+    if(distance > 20)
+      isPreviousVoid = false;
+
+    if (distance > 35 && !isPreviousVoid)
     {
       int creepForwardRotations = r1Rotations + 36;
+
+      Serial.println("Creeping forward");
 
       while (r1Rotations < creepForwardRotations)
       {
         moveForward(200, 200);
+        Serial.print("Forward creep rotation: ");
         Serial.println(r1Rotations);
       }
 
@@ -135,7 +143,7 @@ void turnLeft()
   delay(200);
   r2Rotations = 0;
 
-  while (r2Rotations < 15)
+  while (r2Rotations < 10)
   {
     moveBackward(255, 255);
     Serial.println(r2Rotations);
@@ -179,13 +187,23 @@ void turnRight()
   delay(200);
   r1Rotations = 0;
 
+  while (r1Rotations < 15)
+  {
+    moveBackward(255, 255);
+    Serial.println(r1Rotations);
+  }
+
+  stopMoving();
+  delay(100);
+  r1Rotations = 0;
+
   while (r1Rotations < 30)
   {
     moveRight(220, 0);
     Serial.println(r1Rotations);
 
     sendPulse();
-    if(distance < 13)
+    if(distance < 12)
        break;
 
   }
@@ -202,11 +220,15 @@ void turnRight()
     moveBackward(255, 255);
   }
 
+  isPreviousVoid = true;
+
   stopMoving();
 
   pulsesToMove = 0;
   r1Rotations = 0;
   r2Rotations = 0;
+
+  delay(200);
 }
 
 void moveRight(int leftSpeed, int rightSpeed)
