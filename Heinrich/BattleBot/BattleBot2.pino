@@ -1,12 +1,8 @@
 #include <Adafruit_NeoPixel.h>
+#include <Servo.h>
 
 #define NUM_PIXELS 4 // Number of NeoPixels in the strip
 #define PIXEL_PIN 7  // Pin connected to the NeoPixels
-
-#define GRIPPER_OPEN 1600   // Puls lengte Open
-#define GRIPPER_CLOSE 800   // Puls lengte Open
-#define SERVO_INTERVAL 20   // Servo millis interval
-#define GRIPPER_TOGGLE 1000 // Toggle interval
 
 // Create NeoPixel object
 Adafruit_NeoPixel pixels(NUM_PIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
@@ -19,29 +15,31 @@ Rechtsvoor: 2
 Linksvoor: 3
 */
 
-int colorValues[] = {0, 0, 0, 0, 0, 0}; // Lege array om de waardes van de waardes te lezen
+int colorValues[] = {0, 0, 0, 0, 0, 0};
 
-const int MOTOR_SERVO = 9; // Pin voor gripper
+const int MOTOR_SERVO = 9;
 
-const int MOTOR_A_1 = 3;          // Motor A1
-const int MOTOR_A_2 = 5;          // Motor A2
-const int MOTOR_B_1 = 6;          // Motor B1
-const int MOTOR_B_2 = 11;         // Motor B2
-const int MOTOR_B_Afwijking = 55; // Motor b afwijking
+const int MOTOR_A_1 = 3;
+const int MOTOR_A_2 = 5;
+const int MOTOR_B_1 = 6;
+const int MOTOR_B_2 = 11;
+const int MOTOR_B_Afwijking = 45;
 
-const int LIGHT_SENSOR[8] = {A5, A4, A6, A3, A2, A1, A0, A7}; // Array voor de pins van de lichtsensoren
+const int LIGHT_SENSOR[8] = {A5, A4, A6, A3, A2, A1, A0, A7};
 
-const int MOTOR_SENSOR_1 = 12; // Pin voor R1
-const int MOTOR_SENSOR_2 = 10; // Pin voor R2
+const int MOTOR_SENSOR_1 = 12;
+const int MOTOR_SENSOR_2 = 10;
 
-const int AFSTAND_ECHO = 4;    // Pin voor echo's versturen
-const int AFSTAND_TRIGGER = 2; // Pin voor echo's ontvangen (trigger)
+const int AFSTAND_ECHO = 4;
+const int AFSTAND_TRIGGER = 2;
 
-int COLOR_BLACK = 900; // De lichtwaarde van zwart voor de calibratie om zwart te onderscheiden wit
+int COLOR_BLACK = 900;
 
 float duration_us;
 
-bool START_READY = false; // Zorgt ervoor dat de startsetup en calibratie eenmalig gebeurd
+bool START_READY = false;
+
+Servo gripperServo;
 
 void setup()
 {
@@ -56,12 +54,10 @@ void setup()
 
   for (int i = 0; i < 8; i++)
   {
-    pinMode(LIGHT_SENSOR[i], INPUT); // Deze functie zorgt ervoor dat elke lichtsensor bij de juiste pinMode wordt gezet
+    pinMode(LIGHT_SENSOR[i], INPUT);
   }
 
-  pinMode(MOTOR_SERVO, OUTPUT);
-  digitalWrite(MOTOR_SERVO, LOW);
-
+  gripperServo.attach(MOTOR_SERVO);
   pixels.begin();
 
   lightsOff();
@@ -69,7 +65,7 @@ void setup()
 
 void loop()
 {
-  if (START_READY) // Dit gebeurt er na de calibratie en de startsetup
+  if (START_READY)
   {
     standardLight();
     followLine();
@@ -80,135 +76,130 @@ void loop()
 
     for (int i = 0; i < 3; i++)
     {
-      int lightPlace = 3;
       do
       {
-        lightsOff();
-        pixels.setPixelColor(lightPlace, pixels.Color(0, 255, 0));
-        pixels.show();
-        lightPlace--;
-        if (lightPlace == -1)
-        {
-          lightPlace = 3;
-        }
         delay(100);
-        servoState(GRIPPER_OPEN);
-      } while (getDistanceCM() > 24); // Als er een object binnen 24 cm bereik staat dan begint de code
+      } while (getDistanceCM() > 24);
     }
 
-    lightsOff();
-
-    for (int i = 0; i < 4; i++) // Deze functie telt af voordat de robot begint
+    for (int i = 0; i < 4; i++)
     {
       setLightStartUpLight(i);
-      delay(500);
+      delay(1250);
     }
 
-    motorRight(200);
-    delay(50);
     motorForward(255);
 
-    for (int i = 0; i < 6; i += 2) // Deze functie zorgt voor de calibratie bij de startsetup. Deze code wordt 3 keer uitgevoerd.
+    for (int i = 0; i < 6; i += 2)
     {
-      while (analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK)
+      while (analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK)
       {
         delay(1);
       }
 
-      colorValues[i] = analogRead(LIGHT_SENSOR[3]); // Hier worden de gemeten waardes van zwart op de juiste variabele gezet
+      colorValues[i] = analogRead(LIGHT_SENSOR[3]);
       Serial.println(colorValues[i]);
 
       delay(100);
 
-      motorForward(210);
-      while (analogRead(LIGHT_SENSOR[1]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) < COLOR_BLACK)
+      motorForward(190);
+      while (analogRead(LIGHT_SENSOR[0]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) < COLOR_BLACK)
       {
         delay(1);
       }
 
-      colorValues[i + 1] = analogRead(LIGHT_SENSOR[3]); // Deze functie zorgt ervoor dat alle sensoren de waardes van zwart meekrijgen
+      colorValues[i + 1] = analogRead(LIGHT_SENSOR[3]);
       Serial.println(colorValues[i + 1]);
 
       delay(100);
 
-      motorForward(210);
+      motorForward(190);
     }
 
-    motorForward(210);
+    motorForward(200);
 
     delay(200);
 
-    COLOR_BLACK = average(colorValues, 6) + 250; // Deze functie zorgt ervoor dat er een duidelijke drempel tussen wit en zwart is
-
-    servoState(GRIPPER_CLOSE);
+    COLOR_BLACK = average(colorValues, 6) + 250;
 
     while (analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[5]) > COLOR_BLACK)
     {
       delay(1);
     }
-    while (analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK) // Deze functie zorgt ervoor dat na de calibratie, zodra er wit wordt gezien, draait Heinrich 90 graden naar links
+    while (analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK)
     {
       delay(1);
     }
-    motorStop();
-    for (int i = 0; i < 100; i++) // Deze functie sluit de gripper
-    {
-      delay(1);
-      servoState(GRIPPER_CLOSE);
-    }
+    motorGripperClose();
+    motorLeft(200);
+    delay(200);
 
-    motorLeft(210);
-    delay(500);
-    while (true)
+    do
     {
       motorLeft(200);
-      if (analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[5]) > COLOR_BLACK) // Zodra de robot na calibreren en linksaf slaat de zwarte lijn weer ziet, is de startup klaar
+      if (analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK)
       {
         break;
       }
-    }
+    } while (true);
     START_READY = true;
   }
 }
-
 void followLine()
 {
-  servoState(GRIPPER_CLOSE);
-
-  if (analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK) // Deze functie zorgt ervoor dat Heinrich vooruit rijdt zodra zwart wordt gezien
+  if (analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK)
   {
     motorForwardWithPulses(200, 3);
-    if (analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[5]) > COLOR_BLACK)
-    { // Zodra Heinrich weer zwart ziet na 3 pulses stopt Heinrich met de code.
+    if (analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK){
       motorStop();
-      servoState(GRIPPER_OPEN); // De pion wordt losgelaten
+      motorGripperOpen();
       motorBackward(255);
-      delay(3000);
+      delay(2000);
       motorStop();
       while (true)
-      { // Deze functie zorgt ervoor dat na de race Heinrich leuke verschillende kleuren laat zien
-        int randomColorGreen = random(0, 255);
-        int randomColorRed = random(0, 255);
-        int randomColorBlue = random(0, 255);
-        
-        for (int i = 3; i >= 0; i--)
-        {
-          lightsOff();
-          pixels.setPixelColor(i, pixels.Color(randomColorGreen, randomColorRed, randomColorBlue));
-          pixels.show();
-          delay(100);
+      {
+        int randomColor = random(0, 255);
+        for (int i = 0; i <= 255; i++){
+          delay(10);
+          for (int j = 0; j < 4; j++)
+          {
+            pixels.setPixelColor(0, pixels.Color(i, i, randomColor));
+            pixels.setPixelColor(1, pixels.Color(i, i, randomColor));
+            pixels.setPixelColor(2, pixels.Color(i, i, randomColor));
+            pixels.setPixelColor(3, pixels.Color(i, i, randomColor));
+            pixels.show();
+          }
         }
-        
+        for (int i = 0; i <= 255; i++){
+          delay(10);
+          for (int j = 0; j < 4; j++)
+          {
+            pixels.setPixelColor(0, pixels.Color(randomColor, i, i));
+            pixels.setPixelColor(1, pixels.Color(randomColor, i, i));
+            pixels.setPixelColor(2, pixels.Color(randomColor, i, i));
+            pixels.setPixelColor(3, pixels.Color(randomColor, i, i));
+            pixels.show();
+          }
+        }
+        for (int i = 0; i <= 255; i++){
+          delay(10);
+          for (int j = 0; j < 4; j++)
+          {
+            pixels.setPixelColor(0, pixels.Color(i, randomColor, i));
+            pixels.setPixelColor(1, pixels.Color(i, randomColor, i));
+            pixels.setPixelColor(2, pixels.Color(i, randomColor, i));
+            pixels.setPixelColor(3, pixels.Color(i, randomColor, i));
+            pixels.show();
+          }
+        }
       }
-    }
-    else
-    { // Deze functie zorgt ervoor dat als Heinrich geen zwart ziet na 3 pulses, dat hij rechtsaf gaat tot hij weer zwart ziet op de middelste sensoren.
+    } else {
       motorForwardWithPulses(200, 6);
       motorTurnRight(200);
       while (true)
       {
-        motorRight(180);
-        if (analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK)
+        motorRight(200);
+        if (analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK)
         {
           break;
         }
@@ -217,16 +208,15 @@ void followLine()
   }
   else if (analogRead(LIGHT_SENSOR[5]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK)
   {
-    motorForward(220); // Deze functie zorgt ervoor dat als Heinrich zwart ziet op de middelste (als de rechter sensoren geen zwart zien), dat hij door blijft rijden.
+    motorForward(220);
   }
   else if (analogRead(LIGHT_SENSOR[0]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[1]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[2]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[3]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[5]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[3]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[7]) < COLOR_BLACK)
   {
-    motorForwardWithPulses(200, 9); // Deze functie zorgt ervoor dat als Heinrich links zwart ziet (als de rechter en middelste sensoren geen zwart zien), dat hij linksaf gaat.
-    // motorTurnLeft(255);
+    motorForwardWithPulses(200, 9);
+    motorTurnLeft(255);
     while (true)
     {
-      motorLeft(200);
-      leftLights();
+      motorLeft(210);
       if (analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK)
       {
         break;
@@ -235,52 +225,53 @@ void followLine()
   }
   else
   {
-    checkBothSides(); // Deze functie zorgt ervoor dat als Heinrich helemaal niks herkent en alles wit ziet (dus geen links, midden of rechts een zwarte kleur) dat hij linksaf gaat totdat hij weer zwart ziet in de middelste sensoren.
+    checkBothSides();
   }
 }
-
 void checkBothSides()
 {
   motorStop();
 
-  if (analogRead(LIGHT_SENSOR[7]) > COLOR_BLACK) // Controleert of Heinrich rechts op de lijn zit
+  bool colorDetected = false;
+
+  if (analogRead(LIGHT_SENSOR[7]) > COLOR_BLACK)
   {
-    while (true)
+    do
     {
       motorLeft(200);
-      leftLights();
-      if (analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK) // Heinrich gaat linksaf tot hij weer zwart ziet op
+      if (analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK)
       {
         break;
       }
-    }
+    } while (true);
   }
-  else if (analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK) // Controleert of Heinrich links op de lijn zit
+  else if (analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK)
   {
-    while (true)
+    do
     {
       motorRight(200);
-      if (analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK) // Heinrich gaat rechtsaf tot hij weer zwart ziet op
+      if (analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK)
       {
         break;
       }
-    }
+    } while (true);
   }
-  else // Als alle lichtsensoren wit weerkaatst
+  else
   {
-    while (true)
+    do
     {
       motorLeft(200);
-      if (analogRead(LIGHT_SENSOR[7]) > COLOR_BLACK) // Heinrich gaat linksaf tot hij weer zwart ziet op
+      if (analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK)
       {
         break;
       }
-    }
+    } while (true);
   }
+  motorStop();
 }
 
 void motorForward(int motorSpeed)
-{ // Heinrich gaat vooruit
+{
   standardLight();
   analogWrite(MOTOR_A_1, motorSpeed);
   analogWrite(MOTOR_A_2, 0);
@@ -289,7 +280,7 @@ void motorForward(int motorSpeed)
 }
 
 void motorForwardWithPulses(int motorSpeed, double pulses)
-{ // Heinrich gaat vooruit met behulp van pulses
+{
   standardLight();
   int pulsesToDo = pulses * 2;
   int motor1PulsesDone = 0;
@@ -299,26 +290,26 @@ void motorForwardWithPulses(int motorSpeed, double pulses)
   bool motor1Ready = false;
   bool motor2Ready = false;
 
-  while (!motor1Ready || !motor2Ready) // Terwijl de motoren nog niet klaar zijn, wordt dit stukje code herhaald tot alle rotaties zijn gedaan.
+  while (!motor1Ready || !motor2Ready)
   {
 
-    if (!motor1Ready) // Als de linkermotor niet zijn rotaties heeft gedaan, wordt er nog een rotatie gedaan.
+    if (!motor1Ready)
     {
       analogWrite(MOTOR_A_1, motorSpeed);
       analogWrite(MOTOR_A_2, 0);
     }
-    else // Als de linkermotor zijn rotaties heeft gedaan, worden er geen rotaties meer gedaan.
+    else
     {
       analogWrite(MOTOR_A_1, 0);
       analogWrite(MOTOR_A_2, 0);
     }
 
-    if (!motor2Ready)// Als de rechtermotor niet zijn rotaties heeft gedaan, wordt er nog een rotatie gedaan.
+    if (!motor2Ready)
     {
       analogWrite(MOTOR_B_1, 0);
       analogWrite(MOTOR_B_2, motorSpeed - MOTOR_B_Afwijking);
     }
-    else // Als de rechtermotor zijn rotaties heeft gedaan, worden er geen rotaties meer gedaan.
+    else
     {
       analogWrite(MOTOR_B_1, 0);
       analogWrite(MOTOR_B_2, 0);
@@ -327,7 +318,7 @@ void motorForwardWithPulses(int motorSpeed, double pulses)
     int pulseMotor1Readed = digitalRead(MOTOR_SENSOR_1);
     int pulseMotor2Readed = digitalRead(MOTOR_SENSOR_2);
 
-    if (previous1Pulse != pulseMotor1Readed) // Als er 2 pulses gedaan zijn, wordt er nog 
+    if (previous1Pulse != pulseMotor1Readed)
     {
       motor1PulsesDone++;
       previous1Pulse = pulseMotor1Readed;
@@ -344,11 +335,10 @@ void motorForwardWithPulses(int motorSpeed, double pulses)
   }
   motorStop();
 }
-
 void motorTurnRight(int motorSpeed)
 {
   rightLights();
-  int pulsesToDo = 8 * 2;
+  int pulsesToDo = 9 * 2;
   int motor1PulsesDone = 0;
   int motor2PulsesDone = 0;
   int previous1Pulse = 2;
@@ -401,7 +391,6 @@ void motorTurnRight(int motorSpeed)
   }
   motorStop();
 }
-
 void motorTurnLeft(int motorSpeed)
 {
   leftLights();
@@ -412,8 +401,6 @@ void motorTurnLeft(int motorSpeed)
   int previous2Pulse = 2;
   bool motor1Ready = false;
   bool motor2Ready = false;
-
-  motorForward(255);
 
   while (!motor1Ready || !motor2Ready)
   {
@@ -476,23 +463,21 @@ void motorRight(int motorSpeed)
   analogWrite(MOTOR_B_1, motorSpeed - MOTOR_B_Afwijking);
   analogWrite(MOTOR_B_2, 0);
 }
-
 void motorLeft(int motorSpeed)
 {
   leftLights();
   analogWrite(MOTOR_A_1, 0);
   analogWrite(MOTOR_A_2, 255);
   analogWrite(MOTOR_B_1, 0);
-  analogWrite(MOTOR_B_2, 255 /* - MOTOR_B_Afwijking*/);
+  analogWrite(MOTOR_B_2, 255 - MOTOR_B_Afwijking);
 
   delay(10);
 
   analogWrite(MOTOR_A_1, 0);
   analogWrite(MOTOR_A_2, motorSpeed);
   analogWrite(MOTOR_B_1, 0);
-  analogWrite(MOTOR_B_2, motorSpeed /* - MOTOR_B_Afwijking*/);
+  analogWrite(MOTOR_B_2, motorSpeed - MOTOR_B_Afwijking);
 }
-
 void motorBackward(int motorSpeed)
 {
 
@@ -502,7 +487,6 @@ void motorBackward(int motorSpeed)
   analogWrite(MOTOR_B_2, 0);
   reversingLight();
 }
-
 void motorStop()
 {
   brakeLights();
@@ -512,6 +496,14 @@ void motorStop()
   analogWrite(MOTOR_B_2, 0);
 }
 
+void motorGripperClose()
+{
+  gripperServo.write(30);
+}
+void motorGripperOpen()
+{
+  gripperServo.write(90);
+}
 float getDistanceCM()
 {
   digitalWrite(AFSTAND_TRIGGER, HIGH);
@@ -521,7 +513,6 @@ float getDistanceCM()
   Serial.println(0.017 * duration_us);
   return 0.017 * duration_us;
 }
-
 void brakeLights()
 {
   pixels.setPixelColor(0, pixels.Color(0, 255, 0));
@@ -530,7 +521,6 @@ void brakeLights()
   pixels.setPixelColor(3, pixels.Color(50, 50, 50));
   pixels.show();
 }
-
 void frontLights()
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
@@ -539,7 +529,6 @@ void frontLights()
   pixels.setPixelColor(3, pixels.Color(255, 255, 255));
   pixels.show();
 }
-
 void leftLights()
 {
   pixels.setPixelColor(0, pixels.Color(64, 255, 0));
@@ -548,7 +537,6 @@ void leftLights()
   pixels.setPixelColor(3, pixels.Color(64, 255, 0));
   pixels.show();
 }
-
 void rightLights()
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
@@ -557,7 +545,6 @@ void rightLights()
   pixels.setPixelColor(3, pixels.Color(50, 50, 50));
   pixels.show();
 }
-
 void standardLight()
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
@@ -566,7 +553,6 @@ void standardLight()
   pixels.setPixelColor(3, pixels.Color(50, 50, 50));
   pixels.show();
 }
-
 void reversingLight()
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
@@ -575,13 +561,11 @@ void reversingLight()
   pixels.setPixelColor(3, pixels.Color(50, 50, 50));
   pixels.show();
 }
-
 void setLightStartUpLight(int lightNR)
 {
-  pixels.setPixelColor(lightNR, pixels.Color(255, 0, 0));
+  pixels.setPixelColor(lightNR, pixels.Color(0, 0, 255));
   pixels.show();
 }
-
 void lightsOff()
 {
   pixels.setPixelColor(0, pixels.Color(0, 0, 0));
@@ -590,7 +574,6 @@ void lightsOff()
   pixels.setPixelColor(3, pixels.Color(0, 0, 0));
   pixels.show();
 }
-
 int average(int numbers[], int size)
 {
   double sum = 0;
@@ -599,42 +582,4 @@ int average(int numbers[], int size)
     sum += numbers[x];
   }
   return (int)sum / (double)size;
-}
-
-void gripperToggle()
-{
-  static unsigned long timer;
-  static bool state;
-  if (millis() > timer)
-  {
-    if (state)
-    {
-      servoState(GRIPPER_OPEN);
-    }
-    else
-    {
-      servoState(GRIPPER_CLOSE);
-    }
-
-    state = !state;
-
-    timer = millis() + GRIPPER_TOGGLE;
-  }
-}
-
-void servoState(int pulse)
-{
-  static unsigned long timer;
-  static int pulseUsed;
-  if (pulse > 0)
-  {
-    pulseUsed = pulse;
-  }
-  if (millis() > timer)
-  {
-    digitalWrite(MOTOR_SERVO, HIGH);
-    delayMicroseconds(pulseUsed);
-    digitalWrite(MOTOR_SERVO, LOW);
-    timer = millis() + SERVO_INTERVAL;
-  }
 }
