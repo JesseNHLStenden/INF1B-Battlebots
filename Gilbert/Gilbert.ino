@@ -73,7 +73,9 @@ void loop()
     moveServo(96);
     delay(250);
     // scan for distance
-    int cmToMove = getDistanceFromPulse();
+    long cmToMove = getDistanceFromPulse();
+
+    cmToMove = constrain(cmToMove, 0 , 1000);
     // Calculate distance if pulses
     pulsesToMove = cmToMove * ONE_CM_IN_ROTATIONS;
 
@@ -91,9 +93,7 @@ void loop()
       }
       else if (distance < 25)
       {
-        stopMoving();
-        delay(150);
-        turnLeft();
+        turnAround(true);
       }
     }
 
@@ -114,7 +114,7 @@ void loop()
   else
   {
     sendPulse(); // Puls versturen
-    if(distance > 20)
+    if(distance > 30)
       isPreviousVoid = false;
 
     if (distance > 35 && !isPreviousVoid)
@@ -125,7 +125,7 @@ void loop()
 
       while (r1Rotations < creepForwardRotations)
       {
-        moveForward(200, 200);
+        moveForward(200, 220);
         Serial.print("Forward creep rotation: ");
         Serial.println(r1Rotations);
       }
@@ -154,9 +154,9 @@ void turnLeft()
 
   r2Rotations = 0;
 
-  while (r2Rotations < 34)
+  while (r2Rotations < 32)
   {
-    moveLeft(0, 200);
+    moveLeft(0, 250);
     Serial.println(r2Rotations);
 
     sendPulse();
@@ -197,9 +197,9 @@ void turnRight()
   delay(100);
   r1Rotations = 0;
 
-  while (r1Rotations < 30)
+  while (r1Rotations < 35)
   {
-    moveRight(220, 0);
+    moveRight(250, 0);
     Serial.println(r1Rotations);
 
     sendPulse();
@@ -324,12 +324,48 @@ void adjustDirection()
 {
   //int correctionAmount = distance * 2;
 
-  if (distance >= 13 && distance <= 25)
+  if (distance >= 13 && distance <= 18)
   {
-    moveForward(250, 255); // Go straight
+    moveForward(245, 255); // Go straight
   }
   else if (distance < 13)
   {
     moveForward(170, 255); // Turn slightly left
   }
+   else if (distance > 18)
+  {
+    moveForward(255, 250); // Turn slightly left
+  }
+}
+
+void turnAround(boolean isRightFavoured)
+{
+  r1Rotations = 0;
+  r2Rotations = 0;
+
+  if(isRightFavoured)
+  {
+    while (r2Rotations < 40)
+    {
+      moveBackward(0,220);
+    }
+    delay(150);
+    while (r1Rotations < 40)
+    {
+      moveForward(220,0);
+    }
+  }
+  else
+  {
+    while (r1Rotations < 40)
+    {
+      moveBackward(220,0);
+    }
+    delay(150);
+    while (r2Rotations < 40)
+    {
+      moveForward(0,220);
+    }
+  }
+  stopMoving();
 }
