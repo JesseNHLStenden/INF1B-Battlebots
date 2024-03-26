@@ -9,8 +9,8 @@ const int R2_ROTATION_PIN = 2;
 
 // Servo pins
 const int SERVO_PIN = 9;
-const int TRIGGER_PIN = A4;
-const int ECHO_PIN = A3;
+const int TRIGGER_PIN = A5;
+const int ECHO_PIN = A4;
 
 // Rotation intergers
 int r1Rotations = 0;
@@ -93,7 +93,7 @@ void loop()
       }
       else if (distance < 25)
       {
-        turnAround(true);
+        turnAround();
       }
     }
 
@@ -102,7 +102,7 @@ void loop()
     moveServo(0); // Servo naar rechts draaien
     delay(250);
   }
-  else if (r1Rotations >= (pulsesToMove - 5))
+  else if (r1Rotations >= (pulsesToMove - 3))
   {
     // This stops the robot from moving
     stopMoving();
@@ -119,7 +119,7 @@ void loop()
 
     if (distance > 35 && !isPreviousVoid)
     {
-      int creepForwardRotations = r1Rotations + 36;
+      int creepForwardRotations = r1Rotations + 32;
 
       Serial.println("Creeping forward");
 
@@ -143,7 +143,7 @@ void turnLeft()
   delay(200);
   r2Rotations = 0;
 
-  while (r2Rotations < 10)
+  while (r2Rotations < 12)
   {
     moveBackward(255, 255);
     Serial.println(r2Rotations);
@@ -154,7 +154,7 @@ void turnLeft()
 
   r2Rotations = 0;
 
-  while (r2Rotations < 32)
+  while (r2Rotations < 33)
   {
     moveLeft(0, 250);
     Serial.println(r2Rotations);
@@ -173,6 +173,7 @@ void turnLeft()
   {
     moveBackward(255, 255);
     Serial.println(r2Rotations);
+    
   }
 
   stopMoving();
@@ -197,13 +198,13 @@ void turnRight()
   delay(100);
   r1Rotations = 0;
 
-  while (r1Rotations < 35)
+  while (r1Rotations < 36)
   {
-    moveRight(250, 0);
+    moveRight(220, 0);
     Serial.println(r1Rotations);
 
     sendPulse();
-    if(distance < 12)
+    if(distance < 10)
        break;
 
   }
@@ -328,44 +329,61 @@ void adjustDirection()
   {
     moveForward(245, 255); // Go straight
   }
-  else if (distance < 13)
+  else if (distance < 7) 
   {
-    moveForward(170, 255); // Turn slightly left
+    moveForward(220,220);
   }
-   else if (distance > 18)
+  else if (distance < 13 && distance > 7)
   {
-    moveForward(255, 250); // Turn slightly left
+    moveForward(170, 255);
+  }
+   else if (distance > 16 && distance < 30)
+  {
+    moveForward(255, 185);
   }
 }
 
-void turnAround(boolean isRightFavoured)
+void turnAround()
 {
   r1Rotations = 0;
   r2Rotations = 0;
 
-  if(isRightFavoured)
+  sendPulse();
+  delay(200);
+
+  if (distance > 12) // Als de afstand groter is dan 12
   {
-    while (r2Rotations < 40)
+    // Draai naar links
+    while(r1Rotations < 32) // 32 pulsen naar links
     {
-      moveBackward(0,220);
-    }
-    delay(150);
-    while (r1Rotations < 40)
-    {
-      moveForward(220,0);
+      moveBackward(255,0); // Beweeg naar voren
+      // Hier moet je de rotaties van motor 1 bijhouden
+      Serial.println("r1Rotations: ");
+      Serial.print(r1Rotations);
     }
   }
-  else
+  else // Als de afstand niet groter is dan 12
   {
-    while (r1Rotations < 40)
+    // Draai naar rechts
+    while(r2Rotations < 32) // 32 pulsen naar rechts
     {
-      moveBackward(220,0);
-    }
-    delay(150);
-    while (r2Rotations < 40)
-    {
-      moveForward(0,220);
+      moveBackward(0,255); // Beweeg naar voren
+      // Hier moet je de rotaties van motor 2 bijhouden
+      Serial.println("r2Rotations: ");
+      Serial.print(r2Rotations);
     }
   }
+
+  // Beweeg naar achteren met dezelfde pulsen
+  while (r1Rotations < 5 && r2Rotations < 5) // Hetzelfde aantal pulsen
+  {
+    moveBackward(255,255); // Beweeg achteruit met beide motoren
+    Serial.println("r1Rotations: ");
+    Serial.print(r1Rotations);
+    Serial.println("r2Rotations: ");
+    Serial.print(r2Rotations);
+  }
+
   stopMoving();
+  delay(100);
 }
