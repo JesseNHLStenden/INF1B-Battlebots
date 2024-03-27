@@ -27,7 +27,7 @@ const int MOTOR_A_1 = 3;          // Motor A1
 const int MOTOR_A_2 = 5;          // Motor A2
 const int MOTOR_B_1 = 6;          // Motor B1
 const int MOTOR_B_2 = 11;         // Motor B2
-const int MOTOR_B_Afwijking = 55; // Motor b afwijking
+const int MOTOR_B_Afwijking = 65; // Motor b afwijking
 
 const int LIGHT_SENSOR[8] = {A5, A4, A6, A3, A2, A1, A0, A7}; // Array voor de pins van de lichtsensoren
 
@@ -106,7 +106,7 @@ void loop()
 
     motorRight(200);
     delay(50);
-    motorForward(255);
+    motorForward(230);
 
     for (int i = 0; i < 6; i += 2) // Deze functie zorgt voor de calibratie bij de startsetup. Deze code wordt 3 keer uitgevoerd.
     {
@@ -119,8 +119,7 @@ void loop()
       Serial.println(colorValues[i]);
 
       delay(100);
-
-      motorForward(210);
+      motorForward(200);
       while (analogRead(LIGHT_SENSOR[1]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) < COLOR_BLACK)
       {
         delay(1);
@@ -130,38 +129,50 @@ void loop()
       Serial.println(colorValues[i + 1]);
 
       delay(100);
-
-      motorForward(210);
+      motorForward(200);
     }
 
     motorForward(210);
 
-    delay(200);
+    while (analogRead(LIGHT_SENSOR[3]) < COLOR_BLACK)
+    {
+      delay(1);
+    }
+    while (analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK)
+    {
+      delay(1);
+    }
 
     COLOR_BLACK = average(colorValues, 6) + 250; // Deze functie zorgt ervoor dat er een duidelijke drempel tussen wit en zwart is
 
     servoState(GRIPPER_CLOSE);
 
-    while (analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[5]) > COLOR_BLACK)
+    while (analogRead(LIGHT_SENSOR[2]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) < COLOR_BLACK) //Wacht tot de lichtsensoren zwart detecteren, door het tegengestelde in een while loop te zetten
     {
       delay(1);
     }
-    while (analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK) // Deze functie zorgt ervoor dat na de calibratie, zodra er wit wordt gezien, draait Heinrich 90 graden naar links
+
+    while (analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK) //Wacht tot de lichtsensoren wit detecteren, door het tegengestelde in een while loop te zetten
     {
       delay(1);
     }
+
     motorStop();
+
     for (int i = 0; i < 100; i++) // Deze functie sluit de gripper
     {
       delay(1);
       servoState(GRIPPER_CLOSE);
     }
 
-    motorLeft(210);
-    delay(500);
+    motorLeft(220);
+
+    delay(300);
+
     while (true)
     {
       motorLeft(200);
+
       if (analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[5]) > COLOR_BLACK) // Zodra de robot na calibreren en linksaf slaat de zwarte lijn weer ziet, is de startup klaar
       {
         break;
@@ -190,7 +201,7 @@ void followLine()
         int randomColorGreen = random(0, 255);
         int randomColorRed = random(0, 255);
         int randomColorBlue = random(0, 255);
-        
+
         for (int i = 3; i >= 0; i--)
         {
           lightsOff();
@@ -198,7 +209,7 @@ void followLine()
           pixels.show();
           delay(100);
         }
-        
+
       }
     }
     else
@@ -217,15 +228,14 @@ void followLine()
   }
   else if (analogRead(LIGHT_SENSOR[5]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK)
   {
-    motorForward(220); // Deze functie zorgt ervoor dat als Heinrich zwart ziet op de middelste (als de rechter sensoren geen zwart zien), dat hij door blijft rijden.
+    motorForward(255); // Deze functie zorgt ervoor dat als Heinrich zwart ziet op de middelste (als de rechter sensoren geen zwart zien), dat hij door blijft rijden.
   }
   else if (analogRead(LIGHT_SENSOR[0]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[1]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[2]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[3]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[5]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[4]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[3]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[7]) < COLOR_BLACK)
   {
     motorForwardWithPulses(200, 9); // Deze functie zorgt ervoor dat als Heinrich links zwart ziet (als de rechter en middelste sensoren geen zwart zien), dat hij linksaf gaat.
-    // motorTurnLeft(255);
+    motorLeft(245);
     while (true)
     {
-      motorLeft(200);
       leftLights();
       if (analogRead(LIGHT_SENSOR[4]) > COLOR_BLACK)
       {
@@ -245,9 +255,9 @@ void checkBothSides()
 
   if (analogRead(LIGHT_SENSOR[7]) > COLOR_BLACK) // Controleert of Heinrich rechts op de lijn zit
   {
+    motorLeft(245);
     while (true)
     {
-      motorLeft(200);
       leftLights();
       if (analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK) // Heinrich gaat linksaf tot hij weer zwart ziet op
       {
@@ -257,9 +267,9 @@ void checkBothSides()
   }
   else if (analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[1]) > COLOR_BLACK || analogRead(LIGHT_SENSOR[0]) > COLOR_BLACK) // Controleert of Heinrich links op de lijn zit
   {
+    motorRight(200);
     while (true)
     {
-      motorRight(200);
       if (analogRead(LIGHT_SENSOR[3]) > COLOR_BLACK) // Heinrich gaat rechtsaf tot hij weer zwart ziet op
       {
         break;
@@ -270,7 +280,7 @@ void checkBothSides()
   {
     while (true)
     {
-      motorLeft(200);
+      motorLeft(245);
       if (analogRead(LIGHT_SENSOR[7]) > COLOR_BLACK) // Heinrich gaat linksaf tot hij weer zwart ziet op
       {
         break;
@@ -327,20 +337,20 @@ void motorForwardWithPulses(int motorSpeed, double pulses)
     int pulseMotor1Readed = digitalRead(MOTOR_SENSOR_1);
     int pulseMotor2Readed = digitalRead(MOTOR_SENSOR_2);
 
-    if (previous1Pulse != pulseMotor1Readed) // Als er 2 pulses gedaan zijn, wordt er nog 
+    if (previous1Pulse != pulseMotor1Readed) //Wanneer de huidige sensor status is niet hetzelfde als de vorige status
     {
       motor1PulsesDone++;
       previous1Pulse = pulseMotor1Readed;
     }
 
-    if (previous2Pulse != pulseMotor2Readed)
+    if (previous2Pulse != pulseMotor2Readed) //Wanneer de huidige sensor status is niet hetzelfde als de vorige status
     {
       motor2PulsesDone++;
       previous2Pulse = pulseMotor2Readed;
     }
 
-    motor1Ready = (motor1PulsesDone >= pulsesToDo);
-    motor2Ready = (motor2PulsesDone >= pulsesToDo);
+    motor1Ready = (motor1PulsesDone >= pulsesToDo); //Wanneer de pulsen klaar zijn, hoeft de motor niet meer te rijden
+    motor2Ready = (motor2PulsesDone >= pulsesToDo); //Wanneer de pulsen klaar zijn, hoeft de motor niet meer te rijden
   }
   motorStop();
 }
@@ -356,26 +366,26 @@ void motorTurnRight(int motorSpeed)
   bool motor1Ready = false;
   bool motor2Ready = false;
 
-  while (!motor1Ready || !motor2Ready)
+  while (!motor1Ready || !motor2Ready) // Terwijl de motoren nog niet klaar zijn, wordt dit stukje code herhaald tot alle rotaties zijn gedaan.
   {
 
-    if (!motor1Ready)
+    if (!motor1Ready)// Als de linkermotor niet zijn rotaties heeft gedaan, wordt er nog een rotatie gedaan.
     {
       analogWrite(MOTOR_A_1, motorSpeed);
       analogWrite(MOTOR_A_2, 0);
     }
-    else
+    else// Als de linkermotor zijn rotaties heeft gedaan, worden er geen rotaties meer gedaan.
     {
       analogWrite(MOTOR_A_1, 0);
       analogWrite(MOTOR_A_2, 0);
     }
 
-    if (!motor2Ready)
+    if (!motor2Ready)// Als de rechtermotor niet zijn rotaties heeft gedaan, wordt er nog een rotatie gedaan.
     {
       analogWrite(MOTOR_B_1, motorSpeed);
       analogWrite(MOTOR_B_2, 0);
     }
-    else
+    else// Als de rechtermotor zijn rotaties heeft gedaan, worden er geen rotaties meer gedaan.
     {
       analogWrite(MOTOR_B_1, 0);
       analogWrite(MOTOR_B_2, 0);
@@ -384,25 +394,25 @@ void motorTurnRight(int motorSpeed)
     int pulseMotor1Readed = digitalRead(MOTOR_SENSOR_1);
     int pulseMotor2Readed = digitalRead(MOTOR_SENSOR_2);
 
-    if (previous1Pulse != pulseMotor1Readed)
+    if (previous1Pulse != pulseMotor1Readed)//Wanneer de huidige sensor status is niet hetzelfde als de vorige status
     {
       motor1PulsesDone++;
       previous1Pulse = pulseMotor1Readed;
     }
 
-    if (previous2Pulse != pulseMotor2Readed)
+    if (previous2Pulse != pulseMotor2Readed)//Wanneer de huidige sensor status is niet hetzelfde als de vorige status
     {
       motor2PulsesDone++;
       previous2Pulse = pulseMotor2Readed;
     }
 
-    motor1Ready = (motor1PulsesDone >= pulsesToDo);
-    motor2Ready = (motor2PulsesDone >= pulsesToDo);
+    motor1Ready = (motor1PulsesDone >= pulsesToDo);//Wanneer de pulsen klaar zijn, hoeft de motor niet meer te rijden
+    motor2Ready = (motor2PulsesDone >= pulsesToDo);//Wanneer de pulsen klaar zijn, hoeft de motor niet meer te rijden
   }
   motorStop();
 }
 
-void motorTurnLeft(int motorSpeed)
+void motorTurnLeft(int motorSpeed) // Deze werkt hetzelfde als vorige functie, maar dan linksaf
 {
   leftLights();
   int pulsesToDo = 9 * 2;
@@ -461,7 +471,7 @@ void motorTurnLeft(int motorSpeed)
   motorStop();
 }
 
-void motorRight(int motorSpeed)
+void motorRight(int motorSpeed) //Stuurt robot naar rechts, met een flinke boost, om zeker te zijn dat deze draait
 {
   rightLights();
   analogWrite(MOTOR_A_1, 255);
@@ -477,23 +487,23 @@ void motorRight(int motorSpeed)
   analogWrite(MOTOR_B_2, 0);
 }
 
-void motorLeft(int motorSpeed)
+void motorLeft(int motorSpeed)  //Stuurt robot naar links, met een flinke boost, om zeker te zijn dat deze draait
 {
   leftLights();
   analogWrite(MOTOR_A_1, 0);
   analogWrite(MOTOR_A_2, 255);
   analogWrite(MOTOR_B_1, 0);
-  analogWrite(MOTOR_B_2, 255 /* - MOTOR_B_Afwijking*/);
+  analogWrite(MOTOR_B_2, 255 - MOTOR_B_Afwijking);
 
   delay(10);
 
   analogWrite(MOTOR_A_1, 0);
   analogWrite(MOTOR_A_2, motorSpeed);
   analogWrite(MOTOR_B_1, 0);
-  analogWrite(MOTOR_B_2, motorSpeed /* - MOTOR_B_Afwijking*/);
+  analogWrite(MOTOR_B_2, motorSpeed - MOTOR_B_Afwijking);
 }
 
-void motorBackward(int motorSpeed)
+void motorBackward(int motorSpeed)  //Robot rijdt naar achter
 {
 
   analogWrite(MOTOR_A_1, 0);
@@ -503,7 +513,7 @@ void motorBackward(int motorSpeed)
   reversingLight();
 }
 
-void motorStop()
+void motorStop() // Alle motoren stoppen
 {
   brakeLights();
   analogWrite(MOTOR_A_1, 0);
@@ -512,7 +522,7 @@ void motorStop()
   analogWrite(MOTOR_B_2, 0);
 }
 
-float getDistanceCM()
+float getDistanceCM() // Krijg de afstand van de sensoren in CM
 {
   digitalWrite(AFSTAND_TRIGGER, HIGH);
   delayMicroseconds(10);
@@ -522,7 +532,7 @@ float getDistanceCM()
   return 0.017 * duration_us;
 }
 
-void brakeLights()
+void brakeLights() //Remlichten
 {
   pixels.setPixelColor(0, pixels.Color(0, 255, 0));
   pixels.setPixelColor(1, pixels.Color(0, 255, 0));
@@ -531,7 +541,7 @@ void brakeLights()
   pixels.show();
 }
 
-void frontLights()
+void frontLights() //Standaard lampen
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
   pixels.setPixelColor(1, pixels.Color(0, 50, 0));
@@ -540,7 +550,7 @@ void frontLights()
   pixels.show();
 }
 
-void leftLights()
+void leftLights() //Knipperlicht links
 {
   pixels.setPixelColor(0, pixels.Color(64, 255, 0));
   pixels.setPixelColor(1, pixels.Color(0, 50, 0));
@@ -549,7 +559,7 @@ void leftLights()
   pixels.show();
 }
 
-void rightLights()
+void rightLights() //Knipperlicht rechts
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
   pixels.setPixelColor(1, pixels.Color(64, 255, 0));
@@ -558,7 +568,7 @@ void rightLights()
   pixels.show();
 }
 
-void standardLight()
+void standardLight() //Basis lichten
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
   pixels.setPixelColor(1, pixels.Color(0, 50, 0));
@@ -567,7 +577,7 @@ void standardLight()
   pixels.show();
 }
 
-void reversingLight()
+void reversingLight() //Achterruitrijlampen
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
   pixels.setPixelColor(1, pixels.Color(255, 255, 255));
@@ -576,13 +586,13 @@ void reversingLight()
   pixels.show();
 }
 
-void setLightStartUpLight(int lightNR)
+void setLightStartUpLight(int lightNR) //Opstart lampen
 {
   pixels.setPixelColor(lightNR, pixels.Color(255, 0, 0));
   pixels.show();
 }
 
-void lightsOff()
+void lightsOff() //Alle lampen uit
 {
   pixels.setPixelColor(0, pixels.Color(0, 0, 0));
   pixels.setPixelColor(1, pixels.Color(0, 0, 0));
@@ -594,14 +604,14 @@ void lightsOff()
 int average(int numbers[], int size)
 {
   double sum = 0;
-  for (int x = 0; x < size; x++)
+  for (int i = 0; i < size; i++) // Voor elke opgenomen waarde gaat die de loop langs
   {
-    sum += numbers[x];
+    sum += numbers[i]; // De totale gemeten lichtwaarde wordt hier opgeteld
   }
-  return (int)sum / (double)size;
+  return (int)sum / (double)size; // Door de totale gemeten lichtwaarde te delen door de aantal meetpogingen krijg je de gemiddelde(calibratie)
 }
 
-void gripperToggle()
+void gripperToggle()//Toggle de gripper
 {
   static unsigned long timer;
   static bool state;
@@ -622,7 +632,7 @@ void gripperToggle()
   }
 }
 
-void servoState(int pulse)
+void servoState(int pulse) //Zet de servo voor meegegeven waarde
 {
   static unsigned long timer;
   static int pulseUsed;
