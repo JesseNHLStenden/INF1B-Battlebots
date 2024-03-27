@@ -345,45 +345,5 @@ void adjustDirection()
 
 void turnAround()
 {
-  r1Rotations = 0;
-  r2Rotations = 0;
-
-  sendPulse();
-  delay(200);
-
-  if (distance > 12) // Als de afstand groter is dan 12
-  {
-    // Draai naar links
-    while(r1Rotations < 32) // 32 pulsen naar links
-    {
-      moveBackward(255,0); // Beweeg naar voren
-      // Hier moet je de rotaties van motor 1 bijhouden
-      Serial.println("r1Rotations: ");
-      Serial.print(r1Rotations);
-    }
-  }
-  else // Als de afstand niet groter is dan 12
-  {
-    // Draai naar rechts
-    while(r2Rotations < 32) // 32 pulsen naar rechts
-    {
-      moveBackward(0,255); // Beweeg naar voren
-      // Hier moet je de rotaties van motor 2 bijhouden
-      Serial.println("r2Rotations: ");
-      Serial.print(r2Rotations);
-    }
-  }
-
-  // Beweeg naar achteren met dezelfde pulsen
-  while (r1Rotations < 5 && r2Rotations < 5) // Hetzelfde aantal pulsen
-  {
-    moveBackward(255,255); // Beweeg achteruit met beide motoren
-    Serial.println("r1Rotations: ");
-    Serial.print(r1Rotations);
-    Serial.println("r2Rotations: ");
-    Serial.print(r2Rotations);
-  }
-
-  stopMoving();
-  delay(100);
+  
 }
