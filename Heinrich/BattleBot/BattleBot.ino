@@ -1,4 +1,5 @@
 #include <Adafruit_NeoPixel.h>
+#include <pitches.h>
 
 #define NUM_PIXELS 4 // Number of NeoPixels in the strip
 #define PIXEL_PIN 7  // Pin connected to the NeoPixels
@@ -7,6 +8,13 @@
 #define GRIPPER_CLOSE 800   // Puls lengte Open
 #define SERVO_INTERVAL 20   // Servo millis interval
 #define GRIPPER_TOGGLE 1000 // Toggle interval
+
+#define BUZZER_PIN 8 // Define the pin to which the buzzer is connected
+
+// Define the durations for each note (in milliseconds)
+#define QUARTER_NOTE 250
+#define EIGHTH_NOTE 125
+#define HALF_NOTE 500
 
 // Create NeoPixel object
 Adafruit_NeoPixel pixels(NUM_PIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
@@ -18,6 +26,20 @@ Rechtsachter: 1
 Rechtsvoor: 2
 Linksvoor: 3
 */
+
+int melody[] = {
+  NOTE_E5, NOTE_D5, NOTE_FS4, NOTE_GS4, 
+  NOTE_CS5, NOTE_B4, NOTE_D4, NOTE_E4, 
+  NOTE_B4, NOTE_A4, NOTE_CS4, NOTE_E4,
+  NOTE_A4
+};
+
+int durations[] = {
+  8, 8, 4, 4,
+  8, 8, 4, 4,
+  8, 8, 4, 4,
+  2
+};
 
 int colorValues[] = {0, 0, 0, 0, 0, 0}; // Lege array om de waardes van de waardes te lezen
 
@@ -43,6 +65,8 @@ float duration_us;
 
 bool START_READY = false; // Zorgt ervoor dat de startsetup en calibratie eenmalig gebeurd
 
+
+
 void setup()
 {
   Serial.begin(9600);
@@ -53,6 +77,7 @@ void setup()
   pinMode(MOTOR_B_2, OUTPUT);
   pinMode(AFSTAND_ECHO, INPUT);
   pinMode(AFSTAND_TRIGGER, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
 
   for (int i = 0; i < 8; i++)
   {
@@ -65,6 +90,18 @@ void setup()
   pixels.begin();
 
   lightsOff();
+
+  int size = sizeof(durations) / sizeof(int);
+
+  for (int note = 0; note < size; note++)
+  {
+
+    int duration = 1000 / durations[note];
+    tone(BUZZER_PIN, melody[note], duration);
+    int pauseBetweenNotes = duration * 1.30;
+    delay(pauseBetweenNotes);
+    noTone(BUZZER_PIN);
+  }
 }
 
 void loop()
@@ -147,12 +184,12 @@ void loop()
 
     servoState(GRIPPER_CLOSE);
 
-    while (analogRead(LIGHT_SENSOR[2]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) < COLOR_BLACK) //Wacht tot de lichtsensoren zwart detecteren, door het tegengestelde in een while loop te zetten
+    while (analogRead(LIGHT_SENSOR[2]) < COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) < COLOR_BLACK) // Wacht tot de lichtsensoren zwart detecteren, door het tegengestelde in een while loop te zetten
     {
       delay(1);
     }
 
-    while (analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK) //Wacht tot de lichtsensoren wit detecteren, door het tegengestelde in een while loop te zetten
+    while (analogRead(LIGHT_SENSOR[2]) > COLOR_BLACK && analogRead(LIGHT_SENSOR[6]) > COLOR_BLACK) // Wacht tot de lichtsensoren wit detecteren, door het tegengestelde in een while loop te zetten
     {
       delay(1);
     }
@@ -198,18 +235,39 @@ void followLine()
       motorStop();
       while (true)
       { // Deze functie zorgt ervoor dat na de race Heinrich leuke verschillende kleuren laat zien
+
+        int i = 0;
+
         int randomColorGreen = random(0, 255);
         int randomColorRed = random(0, 255);
         int randomColorBlue = random(0, 255);
 
-        for (int i = 3; i >= 0; i--)
+        int size = sizeof(durations) / sizeof(int);
+
+        for (int note = 0; note < size; note++)
         {
+          int duration = 1000 / durations[note];
+          tone(BUZZER_PIN, melody[note], duration);
+
+          int pauseBetweenNotes = duration * 1.30;
+          delay(pauseBetweenNotes);
+
+          noTone(BUZZER_PIN);
+
           lightsOff();
           pixels.setPixelColor(i, pixels.Color(randomColorGreen, randomColorRed, randomColorBlue));
           pixels.show();
-          delay(100);
+
+          i = i == 0 ? 3 : i - 1;
+          if (i == 3)
+          {
+            randomColorGreen = random(0, 255);
+            randomColorRed = random(0, 255);
+            randomColorBlue = random(0, 255);
+          }
         }
 
+        delay(1000);
       }
     }
     else
@@ -323,7 +381,7 @@ void motorForwardWithPulses(int motorSpeed, double pulses)
       analogWrite(MOTOR_A_2, 0);
     }
 
-    if (!motor2Ready)// Als de rechtermotor niet zijn rotaties heeft gedaan, wordt er nog een rotatie gedaan.
+    if (!motor2Ready) // Als de rechtermotor niet zijn rotaties heeft gedaan, wordt er nog een rotatie gedaan.
     {
       analogWrite(MOTOR_B_1, 0);
       analogWrite(MOTOR_B_2, motorSpeed - MOTOR_B_Afwijking);
@@ -337,20 +395,20 @@ void motorForwardWithPulses(int motorSpeed, double pulses)
     int pulseMotor1Readed = digitalRead(MOTOR_SENSOR_1);
     int pulseMotor2Readed = digitalRead(MOTOR_SENSOR_2);
 
-    if (previous1Pulse != pulseMotor1Readed) //Wanneer de huidige sensor status is niet hetzelfde als de vorige status
+    if (previous1Pulse != pulseMotor1Readed) // Wanneer de huidige sensor status is niet hetzelfde als de vorige status
     {
       motor1PulsesDone++;
       previous1Pulse = pulseMotor1Readed;
     }
 
-    if (previous2Pulse != pulseMotor2Readed) //Wanneer de huidige sensor status is niet hetzelfde als de vorige status
+    if (previous2Pulse != pulseMotor2Readed) // Wanneer de huidige sensor status is niet hetzelfde als de vorige status
     {
       motor2PulsesDone++;
       previous2Pulse = pulseMotor2Readed;
     }
 
-    motor1Ready = (motor1PulsesDone >= pulsesToDo); //Wanneer de pulsen klaar zijn, hoeft de motor niet meer te rijden
-    motor2Ready = (motor2PulsesDone >= pulsesToDo); //Wanneer de pulsen klaar zijn, hoeft de motor niet meer te rijden
+    motor1Ready = (motor1PulsesDone >= pulsesToDo); // Wanneer de pulsen klaar zijn, hoeft de motor niet meer te rijden
+    motor2Ready = (motor2PulsesDone >= pulsesToDo); // Wanneer de pulsen klaar zijn, hoeft de motor niet meer te rijden
   }
   motorStop();
 }
@@ -369,23 +427,23 @@ void motorTurnRight(int motorSpeed)
   while (!motor1Ready || !motor2Ready) // Terwijl de motoren nog niet klaar zijn, wordt dit stukje code herhaald tot alle rotaties zijn gedaan.
   {
 
-    if (!motor1Ready)// Als de linkermotor niet zijn rotaties heeft gedaan, wordt er nog een rotatie gedaan.
+    if (!motor1Ready) // Als de linkermotor niet zijn rotaties heeft gedaan, wordt er nog een rotatie gedaan.
     {
       analogWrite(MOTOR_A_1, motorSpeed);
       analogWrite(MOTOR_A_2, 0);
     }
-    else// Als de linkermotor zijn rotaties heeft gedaan, worden er geen rotaties meer gedaan.
+    else // Als de linkermotor zijn rotaties heeft gedaan, worden er geen rotaties meer gedaan.
     {
       analogWrite(MOTOR_A_1, 0);
       analogWrite(MOTOR_A_2, 0);
     }
 
-    if (!motor2Ready)// Als de rechtermotor niet zijn rotaties heeft gedaan, wordt er nog een rotatie gedaan.
+    if (!motor2Ready) // Als de rechtermotor niet zijn rotaties heeft gedaan, wordt er nog een rotatie gedaan.
     {
       analogWrite(MOTOR_B_1, motorSpeed);
       analogWrite(MOTOR_B_2, 0);
     }
-    else// Als de rechtermotor zijn rotaties heeft gedaan, worden er geen rotaties meer gedaan.
+    else // Als de rechtermotor zijn rotaties heeft gedaan, worden er geen rotaties meer gedaan.
     {
       analogWrite(MOTOR_B_1, 0);
       analogWrite(MOTOR_B_2, 0);
@@ -394,20 +452,20 @@ void motorTurnRight(int motorSpeed)
     int pulseMotor1Readed = digitalRead(MOTOR_SENSOR_1);
     int pulseMotor2Readed = digitalRead(MOTOR_SENSOR_2);
 
-    if (previous1Pulse != pulseMotor1Readed)//Wanneer de huidige sensor status is niet hetzelfde als de vorige status
+    if (previous1Pulse != pulseMotor1Readed) // Wanneer de huidige sensor status is niet hetzelfde als de vorige status
     {
       motor1PulsesDone++;
       previous1Pulse = pulseMotor1Readed;
     }
 
-    if (previous2Pulse != pulseMotor2Readed)//Wanneer de huidige sensor status is niet hetzelfde als de vorige status
+    if (previous2Pulse != pulseMotor2Readed) // Wanneer de huidige sensor status is niet hetzelfde als de vorige status
     {
       motor2PulsesDone++;
       previous2Pulse = pulseMotor2Readed;
     }
 
-    motor1Ready = (motor1PulsesDone >= pulsesToDo);//Wanneer de pulsen klaar zijn, hoeft de motor niet meer te rijden
-    motor2Ready = (motor2PulsesDone >= pulsesToDo);//Wanneer de pulsen klaar zijn, hoeft de motor niet meer te rijden
+    motor1Ready = (motor1PulsesDone >= pulsesToDo); // Wanneer de pulsen klaar zijn, hoeft de motor niet meer te rijden
+    motor2Ready = (motor2PulsesDone >= pulsesToDo); // Wanneer de pulsen klaar zijn, hoeft de motor niet meer te rijden
   }
   motorStop();
 }
@@ -471,7 +529,7 @@ void motorTurnLeft(int motorSpeed) // Deze werkt hetzelfde als vorige functie, m
   motorStop();
 }
 
-void motorRight(int motorSpeed) //Stuurt robot naar rechts, met een flinke boost, om zeker te zijn dat deze draait
+void motorRight(int motorSpeed) // Stuurt robot naar rechts, met een flinke boost, om zeker te zijn dat deze draait
 {
   rightLights();
   analogWrite(MOTOR_A_1, 255);
@@ -487,7 +545,7 @@ void motorRight(int motorSpeed) //Stuurt robot naar rechts, met een flinke boost
   analogWrite(MOTOR_B_2, 0);
 }
 
-void motorLeft(int motorSpeed)  //Stuurt robot naar links, met een flinke boost, om zeker te zijn dat deze draait
+void motorLeft(int motorSpeed) // Stuurt robot naar links, met een flinke boost, om zeker te zijn dat deze draait
 {
   leftLights();
   analogWrite(MOTOR_A_1, 0);
@@ -503,7 +561,7 @@ void motorLeft(int motorSpeed)  //Stuurt robot naar links, met een flinke boost,
   analogWrite(MOTOR_B_2, motorSpeed - MOTOR_B_Afwijking);
 }
 
-void motorBackward(int motorSpeed)  //Robot rijdt naar achter
+void motorBackward(int motorSpeed) // Robot rijdt naar achter
 {
 
   analogWrite(MOTOR_A_1, 0);
@@ -532,7 +590,7 @@ float getDistanceCM() // Krijg de afstand van de sensoren in CM
   return 0.017 * duration_us;
 }
 
-void brakeLights() //Remlichten
+void brakeLights() // Remlichten
 {
   pixels.setPixelColor(0, pixels.Color(0, 255, 0));
   pixels.setPixelColor(1, pixels.Color(0, 255, 0));
@@ -541,7 +599,7 @@ void brakeLights() //Remlichten
   pixels.show();
 }
 
-void frontLights() //Standaard lampen
+void frontLights() // Standaard lampen
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
   pixels.setPixelColor(1, pixels.Color(0, 50, 0));
@@ -550,7 +608,7 @@ void frontLights() //Standaard lampen
   pixels.show();
 }
 
-void leftLights() //Knipperlicht links
+void leftLights() // Knipperlicht links
 {
   pixels.setPixelColor(0, pixels.Color(64, 255, 0));
   pixels.setPixelColor(1, pixels.Color(0, 50, 0));
@@ -559,7 +617,7 @@ void leftLights() //Knipperlicht links
   pixels.show();
 }
 
-void rightLights() //Knipperlicht rechts
+void rightLights() // Knipperlicht rechts
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
   pixels.setPixelColor(1, pixels.Color(64, 255, 0));
@@ -568,7 +626,7 @@ void rightLights() //Knipperlicht rechts
   pixels.show();
 }
 
-void standardLight() //Basis lichten
+void standardLight() // Basis lichten
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
   pixels.setPixelColor(1, pixels.Color(0, 50, 0));
@@ -577,7 +635,7 @@ void standardLight() //Basis lichten
   pixels.show();
 }
 
-void reversingLight() //Achterruitrijlampen
+void reversingLight() // Achterruitrijlampen
 {
   pixels.setPixelColor(0, pixels.Color(0, 50, 0));
   pixels.setPixelColor(1, pixels.Color(255, 255, 255));
@@ -586,13 +644,13 @@ void reversingLight() //Achterruitrijlampen
   pixels.show();
 }
 
-void setLightStartUpLight(int lightNR) //Opstart lampen
+void setLightStartUpLight(int lightNR) // Opstart lampen
 {
   pixels.setPixelColor(lightNR, pixels.Color(255, 0, 0));
   pixels.show();
 }
 
-void lightsOff() //Alle lampen uit
+void lightsOff() // Alle lampen uit
 {
   pixels.setPixelColor(0, pixels.Color(0, 0, 0));
   pixels.setPixelColor(1, pixels.Color(0, 0, 0));
@@ -611,7 +669,7 @@ int average(int numbers[], int size)
   return (int)sum / (double)size; // Door de totale gemeten lichtwaarde te delen door de aantal meetpogingen krijg je de gemiddelde(calibratie)
 }
 
-void gripperToggle()//Toggle de gripper
+void gripperToggle() // Toggle de gripper
 {
   static unsigned long timer;
   static bool state;
@@ -632,7 +690,7 @@ void gripperToggle()//Toggle de gripper
   }
 }
 
-void servoState(int pulse) //Zet de servo voor meegegeven waarde
+void servoState(int pulse) // Zet de servo voor meegegeven waarde
 {
   static unsigned long timer;
   static int pulseUsed;
