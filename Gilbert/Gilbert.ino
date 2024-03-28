@@ -1,4 +1,3 @@
-
 // Motor pins
 const int A1_MOTOR_PIN = 6;
 const int A2_MOTOR_PIN = 11;
@@ -127,7 +126,7 @@ void loop()
 
     if (distance > 35 && !isPreviousVoid)
     {
-      int creepForwardRotations = r1Rotations + 32;
+      int creepForwardRotations = r1Rotations + 38;
 
       Serial.println("Creeping forward");
 
@@ -159,7 +158,7 @@ void checkSurrounding()
 
   differenceInDistance = rightDistance / leftDistance;
 
-  if (differenceInDistance > 0.85 && differenceInDistance < 1.15)
+  if (differenceInDistance > 0.8 && differenceInDistance < 1.2)
   {
     isInMiddle = true;
     Serial.println("It's probably in the middle");
@@ -224,7 +223,9 @@ void turnAround()
     }
     delay(150);
     r1Rotations = 0;
-    while (r1Rotations < 30)
+    while (r1Rotations < 25)
+    if (distance <= 15)
+      break;
     {
       moveBackward(210, 0);
       Serial.println(r1Rotations);
@@ -242,7 +243,7 @@ void turnAround()
   else if (leftDistance < rightDistance)
   {
     r2Rotations = 0;
-    while (r2Rotations < 30)
+    while (r2Rotations < 25)
     {
       moveBackward(0, 210);
       Serial.println(r2Rotations);
@@ -256,7 +257,7 @@ void turnAround()
     }
     delay(150);
     r2Rotations = 0;
-    while (r2Rotations < 30)
+    while (r2Rotations < 25)
     {
       moveBackward(0, 210);
       Serial.println(r2Rotations);
@@ -304,7 +305,7 @@ void turnLeft()
 
   delay(250);
 
-  while (r2Rotations < 30)
+  while (r2Rotations < 20)
   {
     moveBackward(255, 255);
     Serial.println(r2Rotations);
@@ -348,7 +349,7 @@ void turnRight()
 
   delay(250);
 
-  while (r1Rotations < 30)
+  while (r1Rotations < 20)
   {
     Serial.println(r1Rotations);
     moveBackward(255, 255);
@@ -456,22 +457,22 @@ void stopMoving()
 
 void adjustDirection()
 {
-  // int correctionAmount = distance * 2;
+  //int correctionAmount = distance * 2;
 
-  if (distance >= 13 && distance <= 18)
+  if (distance >= 13 && distance <= 14)
   {
     moveForward(245, 255); // Go straight
   }
-  else if (distance < 7)
+  else if (distance < 7) 
   {
-    moveForward(220, 220);
+    moveForward(170,255);
   }
   else if (distance < 13 && distance > 7)
   {
     moveForward(170, 255);
   }
-  else if (distance > 16 && distance < 30)
+   else if (distance >= 14 && distance < 30)
   {
-    moveForward(255, 185);
+    moveForward(255, 170);
   }
 }
