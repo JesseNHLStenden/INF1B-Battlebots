@@ -41,6 +41,68 @@ int durations[] = {
   2
 };
 
+int melodyTetris[] = {
+  NOTE_E5, NOTE_B4, NOTE_C5, NOTE_D5, NOTE_C5, NOTE_B4,
+  NOTE_A4, NOTE_A4, NOTE_C5, NOTE_E5, NOTE_D5, NOTE_C5,
+  NOTE_B4, NOTE_C5, NOTE_D5, NOTE_E5,
+  NOTE_C5, NOTE_A4, NOTE_A4, NOTE_A4, NOTE_B4, NOTE_C5,
+  
+  NOTE_D5, NOTE_F5, NOTE_A5, NOTE_G5, NOTE_F5,
+  NOTE_E5, NOTE_C5, NOTE_E5, NOTE_D5, NOTE_C5,
+  NOTE_B4, NOTE_B4, NOTE_C5, NOTE_D5, NOTE_E5,
+  NOTE_C5, NOTE_A4, NOTE_A4, REST, 
+  
+  NOTE_E5, NOTE_B4, NOTE_C5, NOTE_D5, NOTE_C5, NOTE_B4,
+  NOTE_A4, NOTE_A4, NOTE_C5, NOTE_E5, NOTE_D5, NOTE_C5,
+  NOTE_B4, NOTE_C5, NOTE_D5, NOTE_E5,
+  NOTE_C5, NOTE_A4, NOTE_A4, NOTE_A4, NOTE_B4, NOTE_C5,
+  
+  NOTE_D5, NOTE_F5, NOTE_A5, NOTE_G5, NOTE_F5,
+  NOTE_E5, NOTE_C5, NOTE_E5, NOTE_D5, NOTE_C5,
+  NOTE_B4, NOTE_B4, NOTE_C5, NOTE_D5, NOTE_E5,
+  NOTE_C5, NOTE_A4, NOTE_A4, REST, 
+  
+  NOTE_E5, NOTE_C5,
+  NOTE_D5, NOTE_B4,
+  NOTE_C5, NOTE_A4,
+  NOTE_GS4, NOTE_B4, REST, 
+  NOTE_E5, NOTE_C5,
+  NOTE_D5, NOTE_B4,
+  NOTE_C5, NOTE_E5, NOTE_A5,
+  NOTE_GS5
+};
+
+int durationsTetris[] = {
+  4, 8, 8, 4, 8, 8,
+  4, 8, 8, 4, 8, 8,
+  4, 8, 4, 4,
+  4, 4, 8, 4, 8, 8,
+  
+  4, 8, 4, 8, 8,
+  4, 8, 4, 8, 8,
+  4, 8, 8, 4, 4,
+  4, 4, 4, 4,
+  
+  4, 8, 8, 4, 8, 8,
+  4, 8, 8, 4, 8, 8,
+  4, 8, 4, 4,
+  4, 4, 8, 4, 8, 8,
+  
+  4, 8, 4, 8, 8,
+  4, 8, 4, 8, 8,
+  4, 8, 8, 4, 4,
+  4, 4, 4, 4,
+  
+  2, 2,
+  2, 2,
+  2, 2,
+  2, 4, 8, 
+  2, 2,
+  2, 2,
+  4, 4, 2,
+  2
+};
+
 int colorValues[] = {0, 0, 0, 0, 0, 0}; // Lege array om de waardes van de waardes te lezen
 
 const int MOTOR_SERVO = 9; // Pin voor gripper
@@ -91,16 +153,38 @@ void setup()
 
   lightsOff();
 
-  int size = sizeof(durations) / sizeof(int);
+  motorForward(255);
+  
+  delay(5000);
+
+  motorStop();
+  
+  int randomColorGreen = random(0, 255);
+  int randomColorRed = random(0, 255);
+  int randomColorBlue = random(0, 255);
+
+  int size = sizeof(durationsTetris) / sizeof(int);
+
+  int i = 0;
 
   for (int note = 0; note < size; note++)
   {
-
-    int duration = 1000 / durations[note];
-    tone(BUZZER_PIN, melody[note], duration);
+    int duration = 1000 / durationsTetris[note];
+    tone(BUZZER_PIN, melodyTetris[note], duration);
     int pauseBetweenNotes = duration * 1.30;
     delay(pauseBetweenNotes);
     noTone(BUZZER_PIN);
+
+    lightsOff();
+    pixels.setPixelColor(i, pixels.Color(randomColorGreen, randomColorRed, randomColorBlue));
+    pixels.show();
+    i = i == 0 ? 3 : i - 1;
+    if (i == 3)
+    {
+      randomColorGreen = random(0, 255);
+      randomColorRed = random(0, 255);
+      randomColorBlue = random(0, 255);
+    }
   }
 }
 
