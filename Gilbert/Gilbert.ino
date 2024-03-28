@@ -126,7 +126,7 @@ void loop()
 
     if (distance > 35 && !isPreviousVoid)
     {
-      int creepForwardRotations = r1Rotations + 38;
+      int creepForwardRotations = r1Rotations + 43;
 
       Serial.println("Creeping forward");
 
@@ -174,7 +174,7 @@ void turnAround()
   if (isInMiddle)
   {
     r1Rotations = 0;
-    while (r1Rotations < 60)
+    while (r1Rotations < 63)
     {
       moveBackward(220, 0);
       Serial.println(r1Rotations);
@@ -193,14 +193,12 @@ void turnAround()
     delay(150);
 
     r2Rotations = 0;
-    while (r2Rotations < 35)
+    while (r2Rotations < 15)
     {
       moveForward(0, 220);
       Serial.println(r2Rotations);
 
       sendPulse();
-      if (distance < 15)
-        break;
     }
     stopMoving();
 
@@ -209,27 +207,23 @@ void turnAround()
   else if (leftDistance > rightDistance)
   {
     r1Rotations = 0;
-    while (r1Rotations < 30)
+    while (r1Rotations < 35)
     {
       moveBackward(210, 0);
       Serial.println(r1Rotations);
     }
     delay(150);
     r2Rotations = 0;
-    while (r2Rotations < 25)
+    while (r2Rotations < 30)
     {
       moveForward(0, 210);
       Serial.println(r2Rotations);
     }
     delay(150);
     r1Rotations = 0;
-    while (r1Rotations < 25)
-    if (distance <= 15)
-      break;
-    {
+    while (r1Rotations < 30);
       moveBackward(210, 0);
       Serial.println(r1Rotations);
-    }
     delay(150);
     //            r2Rotations = 0;
     //    while(r2Rotations < 25)
@@ -243,21 +237,21 @@ void turnAround()
   else if (leftDistance < rightDistance)
   {
     r2Rotations = 0;
-    while (r2Rotations < 25)
+    while (r2Rotations < 30)
     {
       moveBackward(0, 210);
       Serial.println(r2Rotations);
     }
     delay(150);
     r1Rotations = 0;
-    while (r1Rotations < 25)
+    while (r1Rotations < 30)
     {
       moveForward(210, 0);
       Serial.println(r1Rotations);
     }
     delay(150);
     r2Rotations = 0;
-    while (r2Rotations < 25)
+    while (r2Rotations < 30)
     {
       moveBackward(0, 210);
       Serial.println(r2Rotations);
@@ -294,10 +288,6 @@ void turnLeft()
   {
     moveLeft(0, 250);
     Serial.println(r2Rotations);
-
-    sendPulse();
-    if (distance < 13)
-      break;
   }
   stopMoving();
 
@@ -323,7 +313,7 @@ void turnRight()
   delay(200);
   r1Rotations = 0;
 
-  while (r1Rotations < 15)
+  while (r1Rotations < 10)
   {
     moveBackward(255, 255);
     Serial.println(r1Rotations);
@@ -471,7 +461,7 @@ void adjustDirection()
   {
     moveForward(170, 255);
   }
-   else if (distance >= 14 && distance < 30)
+   else if (distance >= 17 && distance < 30)
   {
     moveForward(255, 170);
   }
