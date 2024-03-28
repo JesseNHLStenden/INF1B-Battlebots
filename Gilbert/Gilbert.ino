@@ -32,6 +32,13 @@ int noMoveCounter;
 
 boolean isPreviousVoid = false;
 
+// Use these as reference points
+double rightDistance = 0;
+double leftDistance = 0;
+double differenceInDistance;
+
+boolean isInMiddle = false;
+
 void setup()
 {
   // Serial
@@ -75,7 +82,7 @@ void loop()
     // scan for distance
     long cmToMove = getDistanceFromPulse();
 
-    cmToMove = constrain(cmToMove, 0 , 1000);
+    cmToMove = constrain(cmToMove, 0, 1000);
     // Calculate distance if pulses
     pulsesToMove = cmToMove * ONE_CM_IN_ROTATIONS;
 
@@ -93,6 +100,7 @@ void loop()
       }
       else if (distance < 25)
       {
+        checkSurrounding();
         turnAround();
       }
     }
@@ -114,7 +122,7 @@ void loop()
   else
   {
     sendPulse(); // Puls versturen
-    if(distance > 30)
+    if (distance > 30)
       isPreviousVoid = false;
 
     if (distance > 35 && !isPreviousVoid)
@@ -138,6 +146,133 @@ void loop()
   }
 }
 
+void checkSurrounding()
+{
+  moveServo(1);
+  delay(500);
+  sendPulse();
+  rightDistance = (double)distance;
+  moveServo(180);
+  delay(500);
+  sendPulse();
+  leftDistance = (double)distance;
+
+  differenceInDistance = rightDistance / leftDistance;
+
+  if (differenceInDistance > 0.85 && differenceInDistance < 1.15)
+  {
+    isInMiddle = true;
+    Serial.println("It's probably in the middle");
+  }
+  else
+  {
+    isInMiddle = false;
+  }
+}
+
+void turnAround()
+{
+  if (isInMiddle)
+  {
+    r1Rotations = 0;
+    while (r1Rotations < 60)
+    {
+      moveBackward(220, 0);
+      Serial.println(r1Rotations);
+    }
+    stopMoving();
+    delay(150);
+    r1Rotations = 0;
+    while (r1Rotations < 10)
+    {
+      moveBackward(220, 220);
+
+      // Als deze Serial.println weg is dan telt de r1Rotations niet meer op.
+      Serial.println(r1Rotations);
+    }
+    stopMoving();
+    delay(150);
+
+    r2Rotations = 0;
+    while (r2Rotations < 35)
+    {
+      moveForward(0, 220);
+      Serial.println(r2Rotations);
+
+      sendPulse();
+      if (distance < 15)
+        break;
+    }
+    stopMoving();
+
+    delay(1000);
+  }
+  else if (leftDistance > rightDistance)
+  {
+    r1Rotations = 0;
+    while (r1Rotations < 30)
+    {
+      moveBackward(210, 0);
+      Serial.println(r1Rotations);
+    }
+    delay(150);
+    r2Rotations = 0;
+    while (r2Rotations < 25)
+    {
+      moveForward(0, 210);
+      Serial.println(r2Rotations);
+    }
+    delay(150);
+    r1Rotations = 0;
+    while (r1Rotations < 30)
+    {
+      moveBackward(210, 0);
+      Serial.println(r1Rotations);
+    }
+    delay(150);
+    //            r2Rotations = 0;
+    //    while(r2Rotations < 25)
+    //    {
+    //      moveForward(0,210 );
+    //      Serial.println(r2Rotations);
+    //    }
+
+    stopMoving();
+  }
+  else if (leftDistance < rightDistance)
+  {
+    r2Rotations = 0;
+    while (r2Rotations < 30)
+    {
+      moveBackward(0, 210);
+      Serial.println(r2Rotations);
+    }
+    delay(150);
+    r1Rotations = 0;
+    while (r1Rotations < 25)
+    {
+      moveForward(210, 0);
+      Serial.println(r1Rotations);
+    }
+    delay(150);
+    r2Rotations = 0;
+    while (r2Rotations < 30)
+    {
+      moveBackward(0, 210);
+      Serial.println(r2Rotations);
+    }
+    delay(150);
+    //            r2Rotations = 0;
+    //    while(r2Rotations < 25)
+    //    {
+    //      moveForward(0,210 );
+    //      Serial.println(r2Rotations);
+    //    }
+
+    stopMoving();
+  }
+}
+
 void turnLeft()
 {
   delay(200);
@@ -148,7 +283,7 @@ void turnLeft()
     moveBackward(255, 255);
     Serial.println(r2Rotations);
   }
-  
+
   stopMoving();
   delay(100);
 
@@ -160,8 +295,8 @@ void turnLeft()
     Serial.println(r2Rotations);
 
     sendPulse();
-      if(distance < 13)
-       break;
+    if (distance < 13)
+      break;
   }
   stopMoving();
 
@@ -173,7 +308,6 @@ void turnLeft()
   {
     moveBackward(255, 255);
     Serial.println(r2Rotations);
-    
   }
 
   stopMoving();
@@ -204,9 +338,8 @@ void turnRight()
     Serial.println(r1Rotations);
 
     sendPulse();
-    if(distance < 10)
-       break;
-
+    if (distance < 10)
+      break;
   }
 
   stopMoving();
@@ -323,27 +456,22 @@ void stopMoving()
 
 void adjustDirection()
 {
-  //int correctionAmount = distance * 2;
+  // int correctionAmount = distance * 2;
 
   if (distance >= 13 && distance <= 18)
   {
     moveForward(245, 255); // Go straight
   }
-  else if (distance < 7) 
+  else if (distance < 7)
   {
-    moveForward(220,220);
+    moveForward(220, 220);
   }
   else if (distance < 13 && distance > 7)
   {
     moveForward(170, 255);
   }
-   else if (distance > 16 && distance < 30)
+  else if (distance > 16 && distance < 30)
   {
     moveForward(255, 185);
   }
-}
-
-void turnAround()
-{
-  
 }
